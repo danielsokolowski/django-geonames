@@ -8,7 +8,9 @@ from geonames.models import Timezone, Language, Country, Currency, Locality, \
 import datetime
 import os
 import sys
-
+import tempfile
+import shutil
+import glob
 FILES = [
     'http://download.geonames.org/export/dump/timeZones.txt',
     'http://download.geonames.org/export/dump/iso-languagecodes.txt',
@@ -25,8 +27,7 @@ city_types = ['PPL','PPLA','PPLC','PPLA2','PPLA3','PPLA4', 'PPLG']
 
 class Command(BaseCommand):
     help = "Geonames import command."
-    tmpdir = 'tmp'
-    curdir = os.getcwd()
+    temp_dir_path = os.path.join(tempfile.gettempdir(), 'djnago-geonames-downloads')
     countries = {}
     localities = set()
 
@@ -62,6 +63,7 @@ class Command(BaseCommand):
             sys.exit(1)
 
         self.download_files()
+        self.unzip_files()
         self.load_timezones()
         self.load_languagecodes()
         self.load_countries()
@@ -76,33 +78,34 @@ class Command(BaseCommand):
         self.cleanup_files()
 
     def download_files(self):
+        # make the temp folder if it dosen't exist
         try:
-            os.mkdir(self.tmpdir)
-            os.chdir(self.tmpdir)
+            os.mkdir(self.temp_dir_path)
         except OSError:
-            os.chdir(self.tmpdir)
-            print 'Temporary directory %s exists, using already downloaded data' % self.tmpdir
-            return
-
+            pass
+        os.chdir(self.temp_dir_path)
         for f in FILES:
-            if os.system('wget %s' % f) != 0:
-                print 'ERROR fetching %s' % os.path.basename(f)
+            # --timestamping (-N) will overwrite files rather then appending .1, .2 ...
+            # see http://stackoverflow.com/a/16840827/913223
+            if os.system('wget --timestamping %s' % f) != 0:
+                print "ERROR fetching %s. Perhaps you are missing the 'wget' utility." % os.path.basename(f)
                 sys.exit(1)
 
-        for f in ['cities1000.zip', 'alternateNames.zip', ]:
+    def unzip_files(self):
+        os.chdir(self.temp_dir_path)
+        print "Unzipping downloaded files as needed: ''." % glob.glob('*.zip') 
+        for f in glob.glob('*.zip'):
             if os.system('unzip -o %s' % f) != 0:
-                print 'ERROR unzipping %s' % f
+                print "ERROR unzipping %s. Perhaps you are missing the 'unzip' utility." % f
                 sys.exit(1)
 
     def cleanup_files(self):
-        os.chdir(self.curdir)
-        for f in os.listdir(self.tmpdir):
-            os.unlink('%s/%s' % (self.tmpdir, f))
-        os.rmdir(self.tmpdir)
-
+        shutil.rmtree(self.temp_dir_path)
+        
     def load_timezones(self):
         print 'Loading Timezones'
         objects = []
+        os.chdir(self.temp_dir_path)
         with open('timeZones.txt', 'r') as fd:
             try:
                 fd.readline()
@@ -120,6 +123,7 @@ class Command(BaseCommand):
     def load_languagecodes(self):
         print 'Loading Languages'
         objects = []
+        os.chdir(self.temp_dir_path)
         with open('iso-languagecodes.txt', 'r') as fd:
             try:
                 fd.readline()  # skip the head
@@ -155,6 +159,7 @@ class Command(BaseCommand):
         objects = []
         langs_dic = {}
         dollar = Currency.objects.create(code='USD', name='Dollar')
+        os.chdir(self.temp_dir_path)
         with open('countryInfo.txt') as fd:
             try:
                 for line in fd:
@@ -202,6 +207,7 @@ class Command(BaseCommand):
     def load_admin1(self):
         print 'Loading Admin1Codes'
         objects = []
+        os.chdir(self.temp_dir_path)
         with open('admin1CodesASCII.txt') as fd:
             try:
                 for line in fd:
@@ -227,6 +233,7 @@ class Command(BaseCommand):
         objects = []
         admin2_list = []  # to find duplicated
         skipped_duplicated = 0
+        os.chdir(self.temp_dir_path)
         with open('admin2Codes.txt') as fd:
             try:
                 for line in fd:
@@ -272,6 +279,7 @@ class Command(BaseCommand):
         objects = []
         batch = 10000
         processed = 0
+        os.chdir(self.temp_dir_path)
         with open('cities5000.txt', 'r') as fd:
             for line in fd:
                 try:
@@ -383,6 +391,7 @@ class Command(BaseCommand):
         allobjects = {}
         batch = 10000
         processed = 0
+        os.chdir(self.temp_dir_path)
         with open('alternateNames.txt', 'r') as fd:
             for line in fd:
                 try:
