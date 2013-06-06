@@ -75,7 +75,8 @@ class Command(BaseCommand):
         self.check_errors()
         # Save the time when the load happened
         GeonamesUpdate.objects.create()
-        self.cleanup_files()
+        # TODO add a --force to clean up files and do a complete a re-download
+        #self.cleanup_files()
 
     def download_files(self):
         # make the temp folder if it dosen't exist
@@ -110,7 +111,7 @@ class Command(BaseCommand):
             try:
                 fd.readline()
                 for line in fd:
-                    fields = line[:-1].split('\t')
+                    fields = [field.strip() for field in line[:-1].split('\t')]
                     name, gmt_offset, dst_offset = fields[1:4]
                     objects.append(Timezone(name=name, gmt_offset=gmt_offset, dst_offset=dst_offset))
             except Exception, inst:
@@ -128,7 +129,8 @@ class Command(BaseCommand):
             try:
                 fd.readline()  # skip the head
                 for line in fd:
-                    iso_639_1, name = line.split('\t')[2:4]
+                    fields = [field.strip() for field in line.split('\t')]
+                    iso_639_1, name = fields[2:4]
                     if iso_639_1 != '':
                         objects.append(Language(iso_639_1=iso_639_1,
                                                 name=name))
@@ -166,7 +168,7 @@ class Command(BaseCommand):
                     if line[0] == '#':
                         continue
 
-                    fields = line[:-1].split('\t')
+                    fields = [field.strip() for field in line[:-1].split('\t')]
                     code = fields[0]
                     self.countries[code] = {}
                     name = unicode(fields[4], 'utf-8')
@@ -211,7 +213,7 @@ class Command(BaseCommand):
         with open('admin1CodesASCII.txt') as fd:
             try:
                 for line in fd:
-                    fields = line[:-1].split('\t')
+                    fields = [field.strip() for field in line[:-1].split('\t')]
                     codes, name = fields[0:2]
                     country_code, admin1_code = codes.split('.')
                     geonameid = fields[3]
@@ -237,7 +239,7 @@ class Command(BaseCommand):
         with open('admin2Codes.txt') as fd:
             try:
                 for line in fd:
-                    fields = line[:-1].split('\t')
+                    fields = [field.strip() for field in line[:-1].split('\t')]
                     codes, name = fields[0:2]
                     country_code, admin1_code, admin2_code = codes.split('.')
 
@@ -283,7 +285,7 @@ class Command(BaseCommand):
         with open('cities5000.txt', 'r') as fd:
             for line in fd:
                 try:
-                    fields = line[:-1].split('\t')
+                    fields = [field.strip() for field in line[:-1].split('\t')]
                     type = fields[7]
                     if type not in city_types:
                         continue
@@ -360,30 +362,31 @@ class Command(BaseCommand):
         self.delete_empty_countries()
         self.delete_duplicated_localities()
 
+
     def delete_empty_countries(self):
         print 'Setting as deleted empty Countries'
         # Countries
-        countries = Country.objects.annotate(Count("localities")).filter(localities__count=0)
+        countries = Country.objects.annotate(Count("locality_set")).filter(locality_set__count=0)
         for c in countries:
-            c.deleted = True
+            c.status = Country.objects.STATUS_DISABLED
             c.save()
 
-        print ' {0:8d} Countries set as deleted'.format(countries.count())
+        print " {0:8d} Countries set status 'STATUS_DISABLED'".format(countries.count())
 
     def delete_duplicated_localities(self):
         print "Setting as deleted duplicated localities"
         total = 0
         for c in Country.objects.all():
             prev_name = ""
-            for loc in c.localities.order_by("long_name", "-population"):
+            for loc in c.locality_set.order_by("long_name", "-population"):
                 if loc.long_name == prev_name:
-                    loc.deleted = True
+                    loc.status = Locality.objects.STATUS_DISABLED
                     loc.save(check_duplicated_longname=False)
                     total += 1
 
                 prev_name = loc.long_name
 
-        print " {0:8d} localities set as deleted".format(total)
+        print " {0:8d} localities set as 'STATUS_DISABLED'".format(total)
 
     def load_altnames(self):
         print 'Loading alternate names'
@@ -395,7 +398,8 @@ class Command(BaseCommand):
         with open('alternateNames.txt', 'r') as fd:
             for line in fd:
                 try:
-                    fields = line.split('\t')
+                    fields = [field.strip() for field in line.split('\t')]
+                    alternatenameid = fields[0]
                     locality_geonameid = fields[1]
                     if locality_geonameid not in self.localities:
                         continue
@@ -409,6 +413,7 @@ class Command(BaseCommand):
 
                     allobjects[locality_geonameid].add(name)
                     objects.append(AlternateName(
+                        alternatenameid = alternatenameid,
                         locality_id=locality_geonameid,
                         name=name))
                     processed += 1
@@ -428,8 +433,8 @@ class Command(BaseCommand):
         print 'Checking errors'
 
         print ' Checking empty country'
-        if Country.objects.annotate(Count("localities")).filter(localities__count=0):
-            print " ERROR Countries with no localities"
+        if Country.objects.public().annotate(Count("locality_set")).filter(locality_set__count=0):
+            print " ERROR Countries with no locality_set"
             raise Exception()
 
         print ' Checking all Localities with timezone'
@@ -439,7 +444,7 @@ class Command(BaseCommand):
 
         print ' Checking duplicated localities per country'
         for country in Country.objects.all():
-            duplicated = country.localities.values('long_name').annotate(Count('long_name')).filter(long_name__count__gt=1)
+            duplicated = country.locality_set.public().values('long_name').annotate(Count('long_name')).filter(long_name__count__gt=1)
             if len(duplicated) != 0:
                 print " ERROR Duplicated localities in {}: {}".format(country, duplicated)
                 print duplicated
