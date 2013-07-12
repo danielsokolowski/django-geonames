@@ -127,6 +127,7 @@ class Currency(models.Model):
                                 choices=BaseManager.STATUS_CHOICES)
     code = models.CharField(max_length=3, primary_key=True)
     name = models.CharField(max_length=200)
+    # TODO add a symbol field!
 
 
 class Country(models.Model):
@@ -168,6 +169,7 @@ class Admin1Code(models.Model):
     ### model options - "anything that's not a field"
     class Meta:
         unique_together = (("country", "name"),)
+        ordering = ['country', 'name']
 
     ### Python convention class methods
     def __unicode__(self):
@@ -201,7 +203,8 @@ class Admin2Code(models.Model):
     ### model options - "anything that's not a field"
     class Meta:
         unique_together = (("country", "admin1", "name"),)
-
+        ordering = ['country', 'admin1', 'name']
+        
     ### Python convention class methods
     def __unicode__(self):
         admin1_name = "None"
@@ -245,7 +248,7 @@ class Locality(models.Model):
     """ Hold locality information - cities, towns, villages, etc """
     ### model options - "anything that's not a field"
     class Meta:
-        ordering = ['long_name']
+        ordering = ['country', 'admin1', 'admin2', 'long_name']
         verbose_name_plural = 'Localities'
 
     ### Python class methods
@@ -387,7 +390,7 @@ class AlternateName(models.Model):
     ### model options - "anything that's not a field"
     class Meta:
         unique_together = (("locality", "name"),)
-        ordering = ['name']
+        ordering = ['locality', 'name']
         
     ### Python class methods
     def __unicode__(self):
@@ -406,7 +409,3 @@ class AlternateName(models.Model):
     
     ### custom managers
     objects = BaseManager()
-
-    
-
-    
