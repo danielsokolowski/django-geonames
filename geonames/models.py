@@ -68,9 +68,9 @@ class Timezone(models.Model):
         hours = int(gmt)
         minutes = int((gmt - hours) * 60)
         if settings.DEBUG:
-            return u'PK{0}: (UTC{1}{2:02d}:{3:02d}) {4}'.format(self.pk, sign, hours, minutes, self.name) 
-        return u"(UTC{1}{2:02d}:{3:02d}) {4}".format(sign, hours, minutes, self.name)
-
+            return u"PK{0} UTC{1}{2:02d}:{3:02d}".format('PK' + unicode(self.pk), sign, hours, minutes)
+        return u"{0} UTC{1}{2:02d}:{3:02d}".format(self.name, sign, hours, minutes)
+    
     ### custom managers
     objects = BaseManager()
     
@@ -90,9 +90,9 @@ class Language(models.Model):
 
     ### Python convention class methods
     def __unicode__(self):
-        if settings.DEBUG: 
-            return u"PK{0}: {1} - {2}".format(self.pk, self.iso_639_1, self.name)
-        return u"{1} - {2}".format(self.pk, self.iso_639_1, self.name)
+        if settings.DEBUG:
+            return u"PK{0}".format(self.name)
+        return u"{0}".format(self.name)
 
     ### model DB fields
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
@@ -115,7 +115,7 @@ class Currency(models.Model):
     def __unicode__(self):
         if settings.DEBUG: 
             return u"PK{0}: {1}".format(self.code, self.name)
-        return u"{0}".format(self.code)
+        return u"{0} - {1}".format(self.code, self.name)
 
 
     ### custom managers
@@ -141,7 +141,7 @@ class Country(models.Model):
     def __unicode__(self):
         if settings.DEBUG: 
             return u'PK{0}: {1}'.format(self.code, self.name)
-        return u'{0} - {1}'.format(self.code, self.name)
+        return u'{0}'.format(self.name)
 
     ### extra model functions
     def search_locality(self, locality_name):
@@ -174,8 +174,8 @@ class Admin1Code(models.Model):
     ### Python convention class methods
     def __unicode__(self):
         if settings.DEBUG:
-            return u'PK{0}: {1} > {2} - {3}'.format(self.geonameid, self.country.name, self.code, self.name)
-        return u'{1} > {2} - {3}'.format(self.geonameid, self.country.name, self.code, self.name)
+            return u'PK{0}: {1} > {2}'.format(self.geonameid, self.country.name, self.name)
+        return u'{0}, {1}'.format(self.name, self.country.name)
 
     ### Django established method
     def save(self, *args, **kwargs):
@@ -207,13 +207,15 @@ class Admin2Code(models.Model):
         
     ### Python convention class methods
     def __unicode__(self):
-        admin1_name = "None"
+        admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
         if settings.DEBUG:
-            return u'PK{0}: {1} > {2} > {3} - {4}'.format(self.geonameid, self.country.name, 
-                                                          admin1_name, self.code, self.name)
-        return u'{1} > {2} > {3} - {4}'.format(self.geonameid, self.country.name, 
-                                                          admin1_name, self.code, self.name)
+            return u'PK{0}: {1}{2} > {3}'.format(self.geonameid, self.country.name, 
+                                                    ' > ' + admin1_name if admin1_name else '', 
+                                                    self.name)
+        return u'{0}, {1}{2}'.format(self.name, 
+                                        admin1_name + ', ' if admin1_name else '', 
+                                        self.country.name)
 
     ### Django established method
     def save(self, *args, **kwargs):
@@ -253,16 +255,19 @@ class Locality(models.Model):
 
     ### Python class methods
     def __unicode__(self):
-        admin1_name = 'None' 
+        admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
-        admin2_name = 'None' 
+        admin2_name = None 
         if self.admin2: admin2_name = self.admin2.name
         if settings.DEBUG:
-            
-            return u'PK{0}: {1} > {2} > {3} > {4}'.format(self.geonameid, self.country.name, admin1_name,
-                                                                 admin2_name, self.long_name)
-        return u'{1} > {2} > {3} > {4}'.format(self.geonameid, self.country.name, admin1_name,
-                                                                 admin2_name, self.long_name)
+            return u'PK{0}: {1}{2}{3} > {4}'.format(self.geonameid, self.country.name, 
+                                        ' > ' + admin1_name  if admin1_name else '',
+                                        ' > ' + admin2_name + ' > ' if admin2_name else '',
+                                        self.name)
+        return u'{0}{1}{2}, {3}'.format(self.name, 
+                                        ', ' + admin2_name if admin2_name else '',
+                                        ', ' + admin1_name if admin1_name else '',
+                                        self.country.name)
 
     ### Python convention class methods
     def save(self, check_duplicated_longname=True, *args, **kwargs):
@@ -390,13 +395,13 @@ class AlternateName(models.Model):
     ### model options - "anything that's not a field"
     class Meta:
         unique_together = (("locality", "name"),)
-        ordering = ['locality', 'name']
+        ordering = ['locality__pk', 'name']
         
     ### Python class methods
     def __unicode__(self):
         if settings.DEBUG:
-            return u'PK{0}: {1} > {0}'.format(self.alternatenameid, self.locality.name, self.name)
-        return u'{1} > {0}'.format(self.alternatenameid, self.locality.name, self.name)
+            return u'PK{0}: {1} ({2})'.format(self.alternatenameid, self.name, self.locality.name)
+        return u'{0} ({1})'.format(self.name, self.locality.name)
        
     ### model DB fields
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
