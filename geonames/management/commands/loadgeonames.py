@@ -17,7 +17,7 @@ FILES = [
     'http://download.geonames.org/export/dump/countryInfo.txt',
     'http://download.geonames.org/export/dump/admin1CodesASCII.txt',
     'http://download.geonames.org/export/dump/admin2Codes.txt',
-    'http://download.geonames.org/export/dump/cities5000.zip',
+    'http://download.geonames.org/export/dump/cities500.zip',
     'http://download.geonames.org/export/dump/alternateNames.zip',
 ]
 
@@ -34,32 +34,32 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         start_time = datetime.datetime.now()
         self.load()
-        print '\nCompleted in {}'.format(datetime.datetime.now() - start_time)
+        print('\nCompleted in {}'.format(datetime.datetime.now() - start_time))
 
     @transaction.commit_on_success
     def load(self):
         if Timezone.objects.all().count() is not 0:
-            print ' ERROR there are Timezones in the data base'
+            print(' ERROR there are Timezones in the data base')
             sys.exit(1)
 
         if Language.objects.all().count() is not 0:
-            print ' ERROR there are Languages in the data base'
+            print(' ERROR there are Languages in the data base')
             sys.exit(1)
 
         if Country.objects.all().count() is not 0:
-            print ' ERROR there are Countries in the data base'
+            print(' ERROR there are Countries in the data base')
             sys.exit(1)
 
         if Admin1Code.objects.all().count() is not 0:
-            print 'ERROR there are Admin1Codes in the data base'
+            print('ERROR there are Admin1Codes in the data base')
             sys.exit(1)
 
         if Admin2Code.objects.all().count() is not 0:
-            print 'ERROR there are Admin2Codes in the data base'
+            print('ERROR there are Admin2Codes in the data base')
             sys.exit(1)
 
         if Locality.objects.all().count() is not 0:
-            print 'ERROR there are Localities in the data base'
+            print('ERROR there are Localities in the data base')
             sys.exit(1)
 
         self.download_files()
@@ -89,22 +89,22 @@ class Command(BaseCommand):
             # --timestamping (-N) will overwrite files rather then appending .1, .2 ...
             # see http://stackoverflow.com/a/16840827/913223
             if os.system('wget --timestamping %s' % f) != 0:
-                print "ERROR fetching %s. Perhaps you are missing the 'wget' utility." % os.path.basename(f)
+                print("ERROR fetching %s. Perhaps you are missing the 'wget' utility." % os.path.basename(f))
                 sys.exit(1)
 
     def unzip_files(self):
         os.chdir(self.temp_dir_path)
-        print "Unzipping downloaded files as needed: ''." % glob.glob('*.zip') 
+        print("Unzipping downloaded files as needed: ''." % glob.glob('*.zip'))
         for f in glob.glob('*.zip'):
             if os.system('unzip -o %s' % f) != 0:
-                print "ERROR unzipping %s. Perhaps you are missing the 'unzip' utility." % f
+                print("ERROR unzipping %s. Perhaps you are missing the 'unzip' utility." % f)
                 sys.exit(1)
 
     def cleanup_files(self):
         shutil.rmtree(self.temp_dir_path)
         
     def load_timezones(self):
-        print 'Loading Timezones'
+        print('Loading Timezones')
         objects = []
         os.chdir(self.temp_dir_path)
         with open('timeZones.txt', 'r') as fd:
@@ -114,15 +114,15 @@ class Command(BaseCommand):
                     fields = [field.strip() for field in line[:-1].split('\t')]
                     name, gmt_offset, dst_offset = fields[1:4]
                     objects.append(Timezone(name=name, gmt_offset=gmt_offset, dst_offset=dst_offset))
-            except Exception, inst:
+            except Exception as inst:
                 traceback.print_exc(inst)
                 raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
 
         Timezone.objects.bulk_create(objects)
-        print '{0:8d} Timezones loaded'.format(Timezone.objects.all().count())
+        print('{0:8d} Timezones loaded'.format(Timezone.objects.all().count()))
 
     def load_languagecodes(self):
-        print 'Loading Languages'
+        print('Loading Languages')
         objects = []
         os.chdir(self.temp_dir_path)
         with open('iso-languagecodes.txt', 'r') as fd:
@@ -134,16 +134,16 @@ class Command(BaseCommand):
                     if iso_639_1 != '':
                         objects.append(Language(iso_639_1=iso_639_1,
                                                 name=name))
-            except Exception, inst:
+            except Exception as inst:
                 traceback.print_exc(inst)
                 raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
 
         Language.objects.bulk_create(objects)
-        print '{0:8d} Languages loaded'.format(Timezone.objects.all().count())
+        print('{0:8d} Languages loaded'.format(Timezone.objects.all().count()))
         self.fix_languagecodes()
 
     def fix_languagecodes(self):
-        print 'Fixing Language codes'
+        print('Fixing Language codes')
         # Corrections
         Language.objects.filter(iso_639_1='km').update(name='Khmer')
         Language.objects.filter(iso_639_1='ia').update(name='Interlingua')
@@ -157,7 +157,7 @@ class Command(BaseCommand):
         Language.objects.filter(iso_639_1='fy').update(name='Frisian')
 
     def load_countries(self):
-        print 'Loading Countries'
+        print('Loading Countries')
         objects = []
         langs_dic = {}
         dollar = Currency.objects.create(code='USD', name='Dollar')
@@ -184,14 +184,14 @@ class Command(BaseCommand):
                     objects.append(Country(code=code,
                                            name=name,
                                            currency=currency))
-            except Exception, inst:
+            except Exception as inst:
                 traceback.print_exc(inst)
                 raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
 
         Country.objects.bulk_create(objects)
-        print '{0:8d} Countries loaded'.format(Country.objects.all().count())
+        print('{0:8d} Countries loaded'.format(Country.objects.all().count()))
 
-        print 'Adding Languages to Countries'
+        print('Adding Languages to Countries')
         default_lang = Language.objects.get(iso_639_1='en')
         for country in Country.objects.all():
             for code in langs_dic[country.code].split(','):
@@ -207,7 +207,7 @@ class Command(BaseCommand):
                 country.languages.add(default_lang)
 
     def load_admin1(self):
-        print 'Loading Admin1Codes'
+        print('Loading Admin1Codes')
         objects = []
         os.chdir(self.temp_dir_path)
         with open('admin1CodesASCII.txt') as fd:
@@ -223,15 +223,15 @@ class Command(BaseCommand):
                                               code=admin1_code,
                                               name=name,
                                               country_id=country_code))
-            except Exception, inst:
+            except Exception as inst:
                 traceback.print_exc(inst)
                 raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
 
         Admin1Code.objects.bulk_create(objects)
-        print '{0:8d} Admin1Codes loaded'.format(Admin1Code.objects.all().count())
+        print('{0:8d} Admin1Codes loaded'.format(Admin1Code.objects.all().count()))
 
     def load_admin2(self):
-        print 'Loading Admin2Codes'
+        print('Loading Admin2Codes')
         objects = []
         admin2_list = []  # to find duplicated
         skipped_duplicated = 0
@@ -268,16 +268,16 @@ class Command(BaseCommand):
                                               name=name,
                                               country_id=country_code,
                                               admin1_id=admin1_id))
-            except Exception, inst:
+            except Exception as inst:
                 traceback.print_exc(inst)
                 raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
 
         Admin2Code.objects.bulk_create(objects)
-        print '{0:8d} Admin2Codes loaded'.format(Admin2Code.objects.all().count())
-        print '{0:8d} Admin2Codes skipped because duplicated'.format(skipped_duplicated)
+        print('{0:8d} Admin2Codes loaded'.format(Admin2Code.objects.all().count()))
+        print('{0:8d} Admin2Codes skipped because duplicated'.format(skipped_duplicated))
 
     def load_localities(self):
-        print 'Loading Localities'
+        print('Loading Localities')
         objects = []
         batch = 10000
         processed = 0
@@ -322,19 +322,19 @@ class Command(BaseCommand):
                     objects.append(locality)
                     processed += 1
                     self.localities.add(geonameid)
-                except Exception, inst:
+                except Exception as inst:
                     traceback.print_exc(inst)
                     raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
 
                 if processed % batch == 0:
                     Locality.objects.bulk_create(objects)
-                    print "{0:8d} Localities loaded".format(processed)
+                    print("{0:8d} Localities loaded".format(processed))
                     objects = []
 
         Locality.objects.bulk_create(objects)
-        print "{0:8d} Localities loaded".format(processed)
+        print("{0:8d} Localities loaded".format(processed))
 
-        print 'Filling missed timezones in localities'
+        print('Filling missed timezones in localities')
         # Try to find the missing timezones
         for locality in Locality.objects.filter(timezone__isnull=True):
             # We assign the time zone of the most populated locality in the same admin2
@@ -355,7 +355,7 @@ class Command(BaseCommand):
                 locality.timezone = near_localities[0].timezone
                 locality.save()
             else:
-                print " ERROR locality with no timezone {}".format(locality)
+                print(" ERROR locality with no timezone {}".format(locality))
                 raise Exception()
 
     def cleanup(self):
@@ -364,17 +364,17 @@ class Command(BaseCommand):
 
 
     def delete_empty_countries(self):
-        print 'Setting as deleted empty Countries'
+        print('Setting as deleted empty Countries')
         # Countries
         countries = Country.objects.annotate(Count("locality_set")).filter(locality_set__count=0)
         for c in countries:
             c.status = Country.objects.STATUS_DISABLED
             c.save()
 
-        print " {0:8d} Countries set status 'STATUS_DISABLED'".format(countries.count())
+        print(" {0:8d} Countries set status 'STATUS_DISABLED'".format(countries.count()))
 
     def delete_duplicated_localities(self):
-        print "Setting as deleted duplicated localities"
+        print("Setting as deleted duplicated localities")
         total = 0
         for c in Country.objects.all():
             prev_name = ""
@@ -386,10 +386,10 @@ class Command(BaseCommand):
 
                 prev_name = loc.long_name
 
-        print " {0:8d} localities set as 'STATUS_DISABLED'".format(total)
+        print(" {0:8d} localities set as 'STATUS_DISABLED'".format(total))
 
     def load_altnames(self):
-        print 'Loading alternate names'
+        print('Loading alternate names')
         objects = []
         allobjects = {}
         batch = 10000
@@ -417,37 +417,37 @@ class Command(BaseCommand):
                         locality_id=locality_geonameid,
                         name=name))
                     processed += 1
-                except Exception, inst:
+                except Exception as inst:
                     traceback.print_exc(inst)
                     raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
 
                 if processed % batch == 0:
                     AlternateName.objects.bulk_create(objects)
-                    print "{0:8d} AlternateNames loaded".format(processed)
+                    print("{0:8d} AlternateNames loaded".format(processed))
                     objects = []
 
         AlternateName.objects.bulk_create(objects)
-        print "{0:8d} AlternateNames loaded".format(processed)
+        print("{0:8d} AlternateNames loaded".format(processed))
 
     def check_errors(self):
-        print 'Checking errors'
+        print('Checking errors')
 
-        print ' Checking empty country'
+        print(' Checking empty country')
         if Country.objects.public().annotate(Count("locality_set")).filter(locality_set__count=0):
-            print " ERROR Countries with no locality_set"
+            print(" ERROR Countries with no locality_set")
             raise Exception()
 
-        print ' Checking all Localities with timezone'
+        print(' Checking all Localities with timezone')
         if Locality.objects.filter(timezone__isnull=True):
-            print " ERROR Localities with no timezone"
+            print(" ERROR Localities with no timezone")
             raise Exception()
 
-        print ' Checking duplicated localities per country'
+        print(' Checking duplicated localities per country')
         for country in Country.objects.all():
             duplicated = country.locality_set.public().values('long_name').annotate(Count('long_name')).filter(long_name__count__gt=1)
             if len(duplicated) != 0:
-                print " ERROR Duplicated localities in {}: {}".format(country, duplicated)
-                print duplicated
+                print(" ERROR Duplicated localities in {}: {}".format(country, duplicated))
+                print(duplicated)
                 raise Exception()
 
 

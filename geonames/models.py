@@ -68,7 +68,7 @@ class Timezone(models.Model):
         hours = int(gmt)
         minutes = int((gmt - hours) * 60)
         if settings.DEBUG:
-            return u"PK{0} UTC{1}{2:02d}:{3:02d}".format('PK' + unicode(self.pk), sign, hours, minutes)
+            return u"PK{0} UTC{1}{2:02d}:{3:02d}".format('PK' + self.pk, sign, hours, minutes)
         return u"{0} UTC{1}{2:02d}:{3:02d}".format(self.name, sign, hours, minutes)
     
     ### custom managers
@@ -280,15 +280,15 @@ class Locality(models.Model):
             other_localities = other_localities.exclude(geonameid=self.geonameid)
 
             if other_localities.count() > 0:
-                raise StandardError("Duplicated locality long name '{}'".format(self.long_name))
+                raise ValueError("Duplicated locality long name '{}'".format(self.long_name))
 
         # Check consistency
         if self.admin1 is not None and self.admin1.country != self.country:
-            raise StandardError("The country '{}' from the Admin1 '{}' is different than the country '{}' from the locality '{}'".format(
+            raise ValueError("The country '{}' from the Admin1 '{}' is different than the country '{}' from the locality '{}'".format(
                             self.admin1.country, self.admin1, self.country, self.long_name))
 
         if self.admin2 is not None and self.admin2.country != self.country:
-            raise StandardError("The country '{}' from the Admin2 '{}' is different than the country '{}' from the locality '{}'".format(
+            raise ValueError("The country '{}' from the Admin2 '{}' is different than the country '{}' from the locality '{}'".format(
                             self.admin2.country, self.admin2, self.country, self.long_name))
 
         self.point = Point(float(self.longitude), float(self.latitude))
