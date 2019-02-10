@@ -197,7 +197,7 @@ class Admin1Code(models.Model):
     geonameid = models.PositiveIntegerField(primary_key=True)
     code = models.CharField(max_length=7)
     name = models.CharField(max_length=200)
-    country = models.ForeignKey(Country, related_name="admin1_set")
+    country = models.ForeignKey(Country, related_name="admin1_set", on_delete=models.CASCADE)
 
 class Admin2Code(models.Model):
     """ Hold information about administrative subdivision """
@@ -242,8 +242,8 @@ class Admin2Code(models.Model):
     geonameid = models.PositiveIntegerField(primary_key=True)
     code = models.CharField(max_length=30)
     name = models.CharField(max_length=200)
-    country = models.ForeignKey(Country, related_name="admin2_set")
-    admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="admin2_set")
+    country = models.ForeignKey(Country, related_name="admin2_set", on_delete=models.CASCADE)
+    admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="admin2_set", on_delete=models.CASCADE)
 
     
 
@@ -381,9 +381,9 @@ class Locality(models.Model):
     name = models.CharField(max_length=200, db_index=True)
     long_name = models.CharField(max_length=200)
     country = models.ForeignKey(Country, related_name="locality_set")
-    admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="locality_set")
-    admin2 = models.ForeignKey(Admin2Code, null=True, blank=True, related_name="locality_set")
-    timezone = models.ForeignKey(Timezone, related_name="locality_set", null=True)
+    admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="locality_set", on_delete=models.CASCADE)
+    admin2 = models.ForeignKey(Admin2Code, null=True, blank=True, related_name="locality_set", on_delete=models.CASCADE)
+    timezone = models.ForeignKey(Timezone, related_name="locality_set", null=True, on_delete=models.CASCADE)
     population = models.PositiveIntegerField()
     latitude = models.DecimalField(max_digits=7, decimal_places=2)
     longitude = models.DecimalField(max_digits=7, decimal_places=2)
@@ -409,7 +409,7 @@ class AlternateName(models.Model):
                                 # specify blank=False default=<value> to avoid form select '-------' rendering 
                                 choices=BaseManager.STATUS_CHOICES)
     alternatenameid = models.PositiveIntegerField(primary_key=True)
-    locality = models.ForeignKey(Locality, related_name="alternatename_set")
+    locality = models.ForeignKey(Locality, related_name="alternatename_set", on_delete=models.CASCADE)
     name = models.CharField(max_length=200, db_index=True)
     # TODO include localization code
     
