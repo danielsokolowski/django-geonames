@@ -1,7 +1,8 @@
 from django.conf import settings
-from django.contrib.gis.db import models
+# from django.contrib.gis.db import models
+from django.db.models import Manager as GeoManager
 
-class BaseManager(models.GeoManager):
+class BaseManager(GeoManager):
     """
     Additional methods / constants to Base's objects manager - using a GeoManager is fine even for plain models:
     
@@ -221,7 +222,7 @@ class Admin2Code(models.Model):
     def save(self, *args, **kwargs):
         # Check consistency
         if self.admin1 is not None and self.admin1.country != self.country:
-            raise StandardError("The country '{}' from the Admin1 '{}' is different than the country '{}' from the Admin2 '{}' and geonameid {}".format(
+            raise ValueError("The country '{}' from the Admin1 '{}' is different than the country '{}' from the Admin2 '{}' and geonameid {}".format(
                                 self.admin1.country, self.admin1, self.country, self.name, self.geonameid))
 
         # Call the "real" save() method.

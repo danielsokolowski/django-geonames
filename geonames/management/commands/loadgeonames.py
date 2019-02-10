@@ -171,7 +171,7 @@ class Command(BaseCommand):
                     fields = [field.strip() for field in line[:-1].split('\t')]
                     code = fields[0]
                     self.countries[code] = {}
-                    name = unicode(fields[4], 'utf-8')
+                    name = fields[4]#str(fields[4], 'utf-8')
                     currency_code = fields[10]
                     currency_name = fields[11]
                     langs_dic[code] = fields[15]
@@ -218,7 +218,7 @@ class Command(BaseCommand):
                     country_code, admin1_code = codes.split('.')
                     geonameid = fields[3]
                     self.countries[country_code][admin1_code] = {'geonameid': geonameid, 'admins2': {}}
-                    name = unicode(name, 'utf-8')
+                    name = name #unicode(name, 'utf-8')
                     objects.append(Admin1Code(geonameid=geonameid,
                                               code=admin1_code,
                                               name=name,
@@ -262,7 +262,7 @@ class Command(BaseCommand):
                         admin1_id = admin1_dic['geonameid']
                         admin1_dic['admins2'][admin2_code] = geonameid
 
-                    name = unicode(name, 'utf-8')
+                    name = name #unicode(name, 'utf-8')
                     objects.append(Admin2Code(geonameid=geonameid,
                                               code=admin2_code,
                                               name=name,
@@ -302,7 +302,7 @@ class Command(BaseCommand):
                         admin1_id = None
                         admin2_id = None
                     timezone_name = fields[17]
-                    name = unicode(name, 'utf-8')
+                    name = name #unicode(name, 'utf-8')
                     latitude = float(fields[4])
                     longitude = float(fields[5])
                     modification_date = fields[18]
