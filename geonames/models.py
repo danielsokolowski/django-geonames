@@ -162,7 +162,7 @@ class Country(models.Model):
     code = models.CharField(max_length=2, primary_key=True)
     name = models.CharField(max_length=200, unique=True, db_index=True)
     languages = models.ManyToManyField(Language, related_name="country_set")
-    currency = models.ForeignKey(Currency, related_name="country_set")
+    currency = models.ForeignKey(Currency, related_name="country_set", on_delete=models.CASCADE)
     
 
 class Admin1Code(models.Model):
@@ -380,7 +380,7 @@ class Locality(models.Model):
     geonameid = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200, db_index=True)
     long_name = models.CharField(max_length=200)
-    country = models.ForeignKey(Country, related_name="locality_set")
+    country = models.ForeignKey(Country, related_name="locality_set", on_delete=models.CASCADE)
     admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="locality_set", on_delete=models.CASCADE)
     admin2 = models.ForeignKey(Admin2Code, null=True, blank=True, related_name="locality_set", on_delete=models.CASCADE)
     timezone = models.ForeignKey(Timezone, related_name="locality_set", null=True, on_delete=models.CASCADE)
