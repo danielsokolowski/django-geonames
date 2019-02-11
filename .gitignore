@@ -1,6 +1,10 @@
 *.log
 *.pot
 *.pyc
+*.egg-info
+.idea
+dist/
+build/
 local_settings.py
 
 # WebDAV file system cache
