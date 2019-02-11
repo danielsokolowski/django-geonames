@@ -107,7 +107,7 @@ class Command(BaseCommand):
         print('Loading Timezones')
         objects = []
         os.chdir(self.temp_dir_path)
-        with open('timeZones.txt', 'r') as fd:
+        with open('timeZones.txt', 'r', encoding="utf8") as fd:
             try:
                 fd.readline()
                 for line in fd:
@@ -125,7 +125,7 @@ class Command(BaseCommand):
         print('Loading Languages')
         objects = []
         os.chdir(self.temp_dir_path)
-        with open('iso-languagecodes.txt', 'r') as fd:
+        with open('iso-languagecodes.txt', 'r', encoding="utf8") as fd:
             try:
                 fd.readline()  # skip the head
                 for line in fd:
@@ -162,7 +162,7 @@ class Command(BaseCommand):
         langs_dic = {}
         dollar = Currency.objects.create(code='USD', name='Dollar')
         os.chdir(self.temp_dir_path)
-        with open('countryInfo.txt') as fd:
+        with open('countryInfo.txt', encoding="utf8") as fd:
             try:
                 for line in fd:
                     if line[0] == '#':
@@ -210,7 +210,7 @@ class Command(BaseCommand):
         print('Loading Admin1Codes')
         objects = []
         os.chdir(self.temp_dir_path)
-        with open('admin1CodesASCII.txt') as fd:
+        with open('admin1CodesASCII.txt', encoding="utf8") as fd:
             try:
                 for line in fd:
                     fields = [field.strip() for field in line[:-1].split('\t')]
@@ -236,7 +236,7 @@ class Command(BaseCommand):
         admin2_list = []  # to find duplicated
         skipped_duplicated = 0
         os.chdir(self.temp_dir_path)
-        with open('admin2Codes.txt') as fd:
+        with open('admin2Codes.txt', encoding="utf8") as fd:
             try:
                 for line in fd:
                     fields = [field.strip() for field in line[:-1].split('\t')]
@@ -282,7 +282,7 @@ class Command(BaseCommand):
         batch = 10000
         processed = 0
         os.chdir(self.temp_dir_path)
-        with open('cities500.txt', 'r') as fd:
+        with open('cities500.txt', 'r', encoding="utf8") as fd:
             for line in fd:
                 try:
                     fields = [field.strip() for field in line[:-1].split('\t')]
@@ -395,7 +395,7 @@ class Command(BaseCommand):
         batch = 10000
         processed = 0
         os.chdir(self.temp_dir_path)
-        with open('alternateNames.txt', 'r') as fd:
+        with open('alternateNames.txt', 'r', encoding="utf8") as fd:
             for line in fd:
                 try:
                     fields = [field.strip() for field in line.split('\t')]
