@@ -5,7 +5,7 @@ from django.db.models import Manager as GeoManager
 class BaseManager(GeoManager):
     """
     Additional methods / constants to Base's objects manager - using a GeoManager is fine even for plain models:
-    
+
     ``BaseManager.objects.public()`` - all instances that are asccessible through front end
     """
     # Model (db table) wide constants - we put these and not in model definition to avoid circular imports.
@@ -19,11 +19,11 @@ class BaseManager(GeoManager):
         (STATUS_ARCHIVED, "Archived"),
     )
     # We keep status field and custom queries naming a little different as it is not one-to-one mapping in all situations
-    QUERYSET_PUBLIC_KWARGS = {'status__gte': STATUS_ENABLED} # Because you can't yet chain custom manager filters ex. 
-                                                             #'public().open()' we provide access this way.  
-                                                             # workaround - http://stackoverflow.com/questions/2163151/custom-queryset-and-manager-without-breaking-dry  
+    QUERYSET_PUBLIC_KWARGS = {'status__gte': STATUS_ENABLED} # Because you can't yet chain custom manager filters ex.
+                                                             #'public().open()' we provide access this way.
+                                                             # workaround - http://stackoverflow.com/questions/2163151/custom-queryset-and-manager-without-breaking-dry
     QUERYSET_ACTIVE_KWARGS = {'status': STATUS_ENABLED}
-    
+
     def public(self):
         """ Returns all entries someway accessible through front end site"""
         return self.filter(**self.QUERYSET_PUBLIC_KWARGS)
@@ -71,13 +71,13 @@ class Timezone(models.Model):
         if settings.DEBUG:
             return u"PK{0} UTC{1}{2:02d}:{3:02d}".format('PK' + self.pk, sign, hours, minutes)
         return u"{0} UTC{1}{2:02d}:{3:02d}".format(self.name, sign, hours, minutes)
-    
+
     ### custom managers
     objects = BaseManager()
-    
+
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     name = models.CharField(max_length=200, primary_key=True)
     gmt_offset = models.DecimalField(max_digits=4, decimal_places=2)
@@ -96,15 +96,15 @@ class Language(models.Model):
         return u"{0}".format(self.name)
 
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     name = models.CharField(max_length=200, primary_key=True)
     iso_639_1 = models.CharField(max_length=50, blank=True)
 
     ### custom managers
     objects = BaseManager()
-    
+
 class Currency(models.Model):
     """ Model to hold Currency related information """
     ### model options - "anything that's not a field"
@@ -114,17 +114,17 @@ class Currency(models.Model):
 
     ### Python convention class methods
     def __unicode__(self):
-        if settings.DEBUG: 
+        if settings.DEBUG:
             return u"PK{0}: {1}".format(self.code, self.name)
         return u"{0} - {1}".format(self.code, self.name)
 
 
     ### custom managers
     objects = BaseManager()
-    
+
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     code = models.CharField(max_length=3, primary_key=True)
     name = models.CharField(max_length=200)
@@ -140,7 +140,7 @@ class Country(models.Model):
 
     ### Python convention class methods
     def __unicode__(self):
-        if settings.DEBUG: 
+        if settings.DEBUG:
             return u'PK{0}: {1}'.format(self.code, self.name)
         return u'{0}'.format(self.name)
 
@@ -156,14 +156,14 @@ class Country(models.Model):
     objects = BaseManager()
 
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     code = models.CharField(max_length=2, primary_key=True)
     name = models.CharField(max_length=200, unique=True, db_index=True)
     languages = models.ManyToManyField(Language, related_name="country_set")
     currency = models.ForeignKey(Currency, related_name="country_set", on_delete=models.CASCADE)
-    
+
 
 class Admin1Code(models.Model):
     """ Hold information about administrative subdivision """
@@ -186,16 +186,16 @@ class Admin1Code(models.Model):
         # Update child localities long name
         for loc in self.localities.all():
             loc.save()
-    
+
     ### custom managers
     objects = BaseManager()
-    
+
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     geonameid = models.PositiveIntegerField(primary_key=True)
-    code = models.CharField(max_length=7)
+    code = models.CharField(max_length=20)
     name = models.CharField(max_length=200)
     country = models.ForeignKey(Country, related_name="admin1_set", on_delete=models.CASCADE)
 
@@ -205,17 +205,17 @@ class Admin2Code(models.Model):
     class Meta:
         unique_together = (("country", "admin1", "name"),)
         ordering = ['country', 'admin1', 'name']
-        
+
     ### Python convention class methods
     def __unicode__(self):
         admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
         if settings.DEBUG:
-            return u'PK{0}: {1}{2} > {3}'.format(self.geonameid, self.country.name, 
-                                                    ' > ' + admin1_name if admin1_name else '', 
+            return u'PK{0}: {1}{2} > {3}'.format(self.geonameid, self.country.name,
+                                                    ' > ' + admin1_name if admin1_name else '',
                                                     self.name)
-        return u'{0}, {1}{2}'.format(self.name, 
-                                        admin1_name + ', ' if admin1_name else '', 
+        return u'{0}, {1}{2}'.format(self.name,
+                                        admin1_name + ', ' if admin1_name else '',
                                         self.country.name)
 
     ### Django established method
@@ -231,13 +231,13 @@ class Admin2Code(models.Model):
         # Update child localities long name
         for loc in self.localities.all():
             loc.save()
-    
+
     ### custom managers
     objects = BaseManager()
-    
+
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     geonameid = models.PositiveIntegerField(primary_key=True)
     code = models.CharField(max_length=30)
@@ -245,7 +245,7 @@ class Admin2Code(models.Model):
     country = models.ForeignKey(Country, related_name="admin2_set", on_delete=models.CASCADE)
     admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="admin2_set", on_delete=models.CASCADE)
 
-    
+
 
 class Locality(models.Model):
     """ Hold locality information - cities, towns, villages, etc """
@@ -258,14 +258,14 @@ class Locality(models.Model):
     def __unicode__(self):
         admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
-        admin2_name = None 
+        admin2_name = None
         if self.admin2: admin2_name = self.admin2.name
         if settings.DEBUG:
-            return u'PK{0}: {1}{2}{3} > {4}'.format(self.geonameid, self.country.name, 
+            return u'PK{0}: {1}{2}{3} > {4}'.format(self.geonameid, self.country.name,
                                         ' > ' + admin1_name  if admin1_name else '',
                                         ' > ' + admin2_name + ' > ' if admin2_name else '',
                                         self.name)
-        return u'{0}{1}{2}, {3}'.format(self.name, 
+        return u'{0}{1}{2}, {3}'.format(self.name,
                                         ', ' + admin2_name if admin2_name else '',
                                         ', ' + admin1_name if admin1_name else '',
                                         self.country.name)
@@ -374,8 +374,8 @@ class Locality(models.Model):
     objects = BaseManager()
 
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     geonameid = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200, db_index=True)
@@ -397,21 +397,21 @@ class AlternateName(models.Model):
     class Meta:
         unique_together = (("locality", "name"),)
         ordering = ['locality__pk', 'name']
-        
+
     ### Python class methods
     def __unicode__(self):
         if settings.DEBUG:
             return u'PK{0}: {1} ({2})'.format(self.alternatenameid, self.name, self.locality.name)
         return u'{0} ({1})'.format(self.name, self.locality.name)
-       
+
     ### model DB fields
-    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED, 
-                                # specify blank=False default=<value> to avoid form select '-------' rendering 
+    status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
+                                # specify blank=False default=<value> to avoid form select '-------' rendering
                                 choices=BaseManager.STATUS_CHOICES)
     alternatenameid = models.PositiveIntegerField(primary_key=True)
     locality = models.ForeignKey(Locality, related_name="alternatename_set", on_delete=models.CASCADE)
     name = models.CharField(max_length=200, db_index=True)
     # TODO include localization code
-    
+
     ### custom managers
     objects = BaseManager()
