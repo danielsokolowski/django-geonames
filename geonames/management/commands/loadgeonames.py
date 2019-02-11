@@ -27,7 +27,7 @@ city_types = ['PPL','PPLA','PPLC','PPLA2','PPLA3','PPLA4', 'PPLG']
 
 class Command(BaseCommand):
     help = "Geonames import command."
-    temp_dir_path = os.path.join(tempfile.gettempdir(), 'djnago-geonames-downloads')
+    temp_dir_path = os.path.join(tempfile.gettempdir(), 'django-geonames-downloads')
     countries = {}
     localities = set()
 
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         self.load()
         print('\nCompleted in {}'.format(datetime.datetime.now() - start_time))
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def load(self):
         if Timezone.objects.all().count() is not 0:
             print(' ERROR there are Timezones in the data base')
@@ -102,7 +102,7 @@ class Command(BaseCommand):
 
     def cleanup_files(self):
         shutil.rmtree(self.temp_dir_path)
-        
+
     def load_timezones(self):
         print('Loading Timezones')
         objects = []
@@ -282,7 +282,7 @@ class Command(BaseCommand):
         batch = 10000
         processed = 0
         os.chdir(self.temp_dir_path)
-        with open('cities5000.txt', 'r') as fd:
+        with open('cities500.txt', 'r') as fd:
             for line in fd:
                 try:
                     fields = [field.strip() for field in line[:-1].split('\t')]
