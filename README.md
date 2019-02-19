@@ -31,7 +31,7 @@ Quick start
           'geonames',
       )
 
-* Run `python manage.py syncdb` to create the geonames models.
+* Run `python manage.py makemigrations` & `python manage.py migrate` to create the geonames models.
 
 * Run `python manage.py loadgeonames` to import the data from geonames.org (This process can take long).
 
