@@ -26,10 +26,10 @@ class BaseManager(GeoManager):
         (STATUS_ENABLED, "Enabled"),
         (STATUS_ARCHIVED, "Archived"),
     )
-    # We keep status field and custom queries naming a little different as it is not one-to-one mapping in all situations
-    QUERYSET_PUBLIC_KWARGS = {'status__gte': STATUS_ENABLED} # Because you can't yet chain custom manager filters ex.
-                                                             #'public().open()' we provide access this way.
-                                                             # workaround - http://stackoverflow.com/questions/2163151/custom-queryset-and-manager-without-breaking-dry
+    # We keep status field and custom queries naming a little different as it is not always one-to-one mapping
+    QUERYSET_PUBLIC_KWARGS = {'status__gte': STATUS_ENABLED}
+    # We provide access this way because you can't yet chain custom manager filters e.g. 'public().open()'
+    # workaround - http://stackoverflow.com/questions/2163151/custom-queryset-and-manager-without-breaking-dry
     QUERYSET_ACTIVE_KWARGS = {'status': STATUS_ENABLED}
 
     def public(self):
