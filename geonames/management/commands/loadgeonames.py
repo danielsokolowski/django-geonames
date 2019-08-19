@@ -23,6 +23,8 @@ FILES = [
 
 # See http://www.geonames.org/export/codes.html
 city_types = ['PPL','PPLA','PPLC','PPLA2','PPLA3','PPLA4', 'PPLG']
+geo_models = [Timezone, Language, Country, Currency,
+              Admin1Code, Admin2Code, Locality, AlternateName]
 
 
 class Command(BaseCommand):
@@ -31,36 +33,36 @@ class Command(BaseCommand):
     countries = {}
     localities = set()
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Delete data first and redownload',
+        )
+
     def handle(self, *args, **options):
         start_time = datetime.datetime.now()
-        self.load()
+
+        if options['force']:
+            self.load(clear=True)
+        else:
+            self.load()
         print('\nCompleted in {}'.format(datetime.datetime.now() - start_time))
 
     @transaction.atomic
-    def load(self):
-        if Timezone.objects.all().count() is not 0:
-            print(' ERROR there are Timezones in the data base')
-            sys.exit(1)
+    def load(self, clear=False):
+        if clear:
+            self.cleanup_files()
 
-        if Language.objects.all().count() is not 0:
-            print(' ERROR there are Languages in the data base')
-            sys.exit(1)
+            print("Deleting data")
+            for member in geo_models:
+                print(f" - {member._meta.verbose_name}")
+                member.objects.all().delete()
 
-        if Country.objects.all().count() is not 0:
-            print(' ERROR there are Countries in the data base')
-            sys.exit(1)
-
-        if Admin1Code.objects.all().count() is not 0:
-            print('ERROR there are Admin1Codes in the data base')
-            sys.exit(1)
-
-        if Admin2Code.objects.all().count() is not 0:
-            print('ERROR there are Admin2Codes in the data base')
-            sys.exit(1)
-
-        if Locality.objects.all().count() is not 0:
-            print('ERROR there are Localities in the data base')
-            sys.exit(1)
+        for member in geo_models:
+            if member.objects.all().count() is not 0:
+                print(f'ERROR: there are {member._meta.verbose_name_plural} in the database')
+                sys.exit(1)
 
         self.download_files()
         self.unzip_files()
@@ -73,10 +75,9 @@ class Command(BaseCommand):
         self.cleanup()
         self.load_altnames()
         self.check_errors()
+
         # Save the time when the load happened
         GeonamesUpdate.objects.create()
-        # TODO add a --force to clean up files and do a complete a re-download
-        #self.cleanup_files()
 
     def download_files(self):
         # make the temp folder if it dosen't exist
