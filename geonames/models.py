@@ -56,7 +56,7 @@ class Timezone(models.Model):
     class Meta:
         ordering = ['gmt_offset', 'name']
 
-    def __unicode__(self):
+    def __str__(self):
         if self.gmt_offset >= 0:
             sign = '+'
         else:
@@ -83,7 +83,7 @@ class Language(models.Model):
     class Meta:
         ordering = ['name']
 
-    def __unicode__(self):
+    def __str__(self):
         if settings.DEBUG:
             return u"PK{0}".format(self.name)
         return u"{0}".format(self.name)
@@ -102,7 +102,7 @@ class Currency(models.Model):
         ordering = ['name']
         verbose_name_plural = 'Currencies'
 
-    def __unicode__(self):
+    def __str__(self):
         if settings.DEBUG:
             return u"PK{0}: {1}".format(self.code, self.name)
         return u"{0} - {1}".format(self.code, self.name)
@@ -122,7 +122,7 @@ class Country(models.Model):
         ordering = ['name']
         verbose_name_plural = 'Countries'
 
-    def __unicode__(self):
+    def __str__(self):
         if settings.DEBUG:
             return u'PK{0}: {1}'.format(self.code, self.name)
         return u'{0}'.format(self.name)
@@ -150,7 +150,7 @@ class Admin1Code(models.Model):
         unique_together = (("country", "name"),)
         ordering = ['country', 'name']
 
-    def __unicode__(self):
+    def __str__(self):
         if settings.DEBUG:
             return u'PK{0}: {1} > {2}'.format(self.geonameid, self.country.name, self.name)
         return u'{0}, {1}'.format(self.name, self.country.name)
@@ -179,7 +179,7 @@ class Admin2Code(models.Model):
         unique_together = (("country", "admin1", "name"),)
         ordering = ['country', 'admin1', 'name']
 
-    def __unicode__(self):
+    def __str__(self):
         admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
         if settings.DEBUG:
@@ -220,7 +220,7 @@ class Locality(models.Model):
         ordering = ['country', 'admin1', 'admin2', 'long_name']
         verbose_name_plural = 'Localities'
 
-    def __unicode__(self):
+    def __str__(self):
         admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
         admin2_name = None
@@ -357,7 +357,7 @@ class AlternateName(models.Model):
         unique_together = (("locality", "name"),)
         ordering = ['locality__pk', 'name']
 
-    def __unicode__(self):
+    def __str__(self):
         if settings.DEBUG:
             return u'PK{0}: {1} ({2})'.format(self.alternatenameid, self.name, self.locality.name)
         return u'{0} ({1})'.format(self.name, self.locality.name)
