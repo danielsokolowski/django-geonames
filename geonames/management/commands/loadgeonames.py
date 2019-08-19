@@ -22,7 +22,7 @@ FILES = [
 ]
 
 # See http://www.geonames.org/export/codes.html
-city_types = ['PPL','PPLA','PPLC','PPLA2','PPLA3','PPLA4', 'PPLG']
+city_types = ['PPL', 'PPLA', 'PPLC', 'PPLA2', 'PPLA3', 'PPLA4', 'PPLG']
 geo_models = [Timezone, Language, Country, Currency,
               Admin1Code, Admin2Code, Locality, AlternateName]
 
@@ -321,7 +321,8 @@ class Command(BaseCommand):
                         point=Point(longitude, latitude),
                         timezone_id=timezone_name,
                         population=population,
-                        modification_date=modification_date)
+                        modification_date=modification_date
+                    )
                     locality.long_name = locality.generate_long_name()
                     objects.append(locality)
                     processed += 1
@@ -365,7 +366,6 @@ class Command(BaseCommand):
     def cleanup(self):
         self.delete_empty_countries()
         self.delete_duplicated_localities()
-
 
     def delete_empty_countries(self):
         print('Setting as deleted empty Countries')
@@ -416,10 +416,9 @@ class Command(BaseCommand):
                         allobjects[locality_geonameid] = set()
 
                     allobjects[locality_geonameid].add(name)
-                    objects.append(AlternateName(
-                        alternatenameid = alternatenameid,
-                        locality_id=locality_geonameid,
-                        name=name))
+                    objects.append(AlternateName(alternatenameid=alternatenameid,
+                                                 locality_id=locality_geonameid,
+                                                 name=name))
                     processed += 1
                 except Exception as inst:
                     traceback.print_exc(inst)
@@ -448,7 +447,8 @@ class Command(BaseCommand):
 
         print('Checking duplicated localities per country')
         for country in Country.objects.all():
-            duplicated = country.locality_set.public().values('long_name').annotate(Count('long_name')).filter(long_name__count__gt=1)
+            duplicated = country.locality_set.public().values('long_name')\
+                .annotate(Count('long_name')).filter(long_name__count__gt=1)
             if len(duplicated) != 0:
                 print(f"ERROR Duplicated localities in {country}: {duplicated}")
                 print(duplicated)
