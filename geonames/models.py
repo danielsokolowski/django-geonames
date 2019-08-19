@@ -2,6 +2,14 @@ from django.conf import settings
 # from django.contrib.gis.db import models
 from django.db.models import Manager as GeoManager
 
+from decimal import Decimal
+from django.contrib.gis.db import models
+from django.contrib.gis.measure import D
+from django.db.models import Q
+from math import degrees, radians, cos, sin, acos, pi, fabs
+from django.contrib.gis.geos import Point
+
+
 class BaseManager(GeoManager):
     """
     Additional methods / constants to Base's objects manager - using a GeoManager is fine even for plain models:
@@ -31,13 +39,6 @@ class BaseManager(GeoManager):
     def active(self):
         """Returns all entries that are considered active, i.e. available in forms, selections, choices, etc"""
         return self.filter(**self.QUERYSET_ACTIVE_KWARGS)
-
-from decimal import Decimal
-from django.contrib.gis.db import models
-from django.contrib.gis.measure import D
-from django.db.models import Q
-from math import degrees, radians, cos, sin, acos, pi, fabs
-from django.contrib.gis.geos import Point
 
 
 # Some constants for the geo maths
