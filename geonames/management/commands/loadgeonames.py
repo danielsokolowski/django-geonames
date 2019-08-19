@@ -90,7 +90,7 @@ class Command(BaseCommand):
             # --timestamping (-N) will overwrite files rather then appending .1, .2 ...
             # see http://stackoverflow.com/a/16840827/913223
             if os.system('wget --timestamping %s' % f) != 0:
-                print("ERROR fetching %s. Perhaps you are missing the 'wget' utility." % os.path.basename(f))
+                print(f"ERROR fetching {os.path.basename(f)}. Perhaps you are missing the 'wget' utility.")
                 sys.exit(1)
 
     def unzip_files(self):
@@ -98,7 +98,7 @@ class Command(BaseCommand):
         print("Unzipping downloaded files as needed: ''." % glob.glob('*.zip'))
         for f in glob.glob('*.zip'):
             if os.system('unzip -o %s' % f) != 0:
-                print("ERROR unzipping %s. Perhaps you are missing the 'unzip' utility." % f)
+                print(f"ERROR unzipping {f}. Perhaps you are missing the 'unzip' utility.")
                 sys.exit(1)
 
     def cleanup_files(self):
@@ -117,7 +117,7 @@ class Command(BaseCommand):
                     objects.append(Timezone(name=name, gmt_offset=gmt_offset, dst_offset=dst_offset))
             except Exception as inst:
                 traceback.print_exc(inst)
-                raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
+                raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Timezone.objects.bulk_create(objects)
         print('{0:8d} Timezones loaded'.format(Timezone.objects.all().count()))
@@ -137,7 +137,7 @@ class Command(BaseCommand):
                                                 name=name))
             except Exception as inst:
                 traceback.print_exc(inst)
-                raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
+                raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Language.objects.bulk_create(objects)
         print('{0:8d} Languages loaded'.format(Timezone.objects.all().count()))
@@ -190,7 +190,7 @@ class Command(BaseCommand):
                                            currency=currency))
             except Exception as inst:
                 traceback.print_exc(inst)
-                raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
+                raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Country.objects.bulk_create(objects)
         print('{0:8d} Countries loaded'.format(Country.objects.all().count()))
@@ -229,7 +229,7 @@ class Command(BaseCommand):
                                               country_id=country_code))
             except Exception as inst:
                 traceback.print_exc(inst)
-                raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
+                raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Admin1Code.objects.bulk_create(objects)
         print('{0:8d} Admin1Codes loaded'.format(Admin1Code.objects.all().count()))
@@ -248,7 +248,7 @@ class Command(BaseCommand):
                     country_code, admin1_code, admin2_code = codes.split('.')
 
                     # if there is a duplicated
-                    long_code = "{}.{}.{}".format(country_code, admin1_code, name)
+                    long_code = f"{country_code}.{admin1_code}.{name}"
                     if long_code in admin2_list:
                         skipped_duplicated += 1
                         continue
@@ -274,7 +274,7 @@ class Command(BaseCommand):
                                               admin1_id=admin1_id))
             except Exception as inst:
                 traceback.print_exc(inst)
-                raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
+                raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Admin2Code.objects.bulk_create(objects)
         print('{0:8d} Admin2Codes loaded'.format(Admin2Code.objects.all().count()))
@@ -328,7 +328,7 @@ class Command(BaseCommand):
                     self.localities.add(geonameid)
                 except Exception as inst:
                     traceback.print_exc(inst)
-                    raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
+                    raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
                 if processed % batch == 0:
                     Locality.objects.bulk_create(objects)
@@ -359,7 +359,7 @@ class Command(BaseCommand):
                 locality.timezone = near_localities[0].timezone
                 locality.save()
             else:
-                print(" ERROR locality with no timezone {}".format(locality))
+                print(f"ERROR locality with no timezone {locality}")
                 raise Exception()
 
     def cleanup(self):
@@ -423,7 +423,7 @@ class Command(BaseCommand):
                     processed += 1
                 except Exception as inst:
                     traceback.print_exc(inst)
-                    raise Exception("ERROR parsing:\n {}\n The error was: {}".format(line, inst))
+                    raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
                 if processed % batch == 0:
                     AlternateName.objects.bulk_create(objects)
@@ -436,21 +436,21 @@ class Command(BaseCommand):
     def check_errors(self):
         print('Checking errors')
 
-        print(' Checking empty country')
+        print('Checking empty country')
         if Country.objects.public().annotate(Count("locality_set")).filter(locality_set__count=0):
-            print(" ERROR Countries with no locality_set")
+            print("ERROR Countries with no locality_set")
             raise Exception()
 
-        print(' Checking all Localities with timezone')
+        print('Checking all Localities with timezone')
         if Locality.objects.filter(timezone__isnull=True):
-            print(" ERROR Localities with no timezone")
+            print("ERROR Localities with no timezone")
             raise Exception()
 
-        print(' Checking duplicated localities per country')
+        print('Checking duplicated localities per country')
         for country in Country.objects.all():
             duplicated = country.locality_set.public().values('long_name').annotate(Count('long_name')).filter(long_name__count__gt=1)
             if len(duplicated) != 0:
-                print(" ERROR Duplicated localities in {}: {}".format(country, duplicated))
+                print(f"ERROR Duplicated localities in {country}: {duplicated}")
                 print(duplicated)
                 raise Exception()
 

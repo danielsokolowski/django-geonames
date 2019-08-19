@@ -86,8 +86,8 @@ class Language(models.Model):
 
     def __str__(self):
         if settings.DEBUG:
-            return u"PK{0}".format(self.name)
-        return u"{0}".format(self.name)
+            return f"PK{self.name}"
+        return self.name
 
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
                                  choices=BaseManager.STATUS_CHOICES)
@@ -125,8 +125,8 @@ class Country(models.Model):
 
     def __str__(self):
         if settings.DEBUG:
-            return u'PK{0}: {1}'.format(self.code, self.name)
-        return u'{0}'.format(self.name)
+            return f'PK{self.code}: {self.name}'
+        return self.name
 
     def search_locality(self, locality_name):
         if len(locality_name) == 0:
@@ -153,8 +153,8 @@ class Admin1Code(models.Model):
 
     def __str__(self):
         if settings.DEBUG:
-            return u'PK{0}: {1} > {2}'.format(self.geonameid, self.country.name, self.name)
-        return u'{0}, {1}'.format(self.name, self.country.name)
+            return f'PK{self.geonameid}: {self.country.name} > {self.name}'
+        return f'{self.name}, {self.country.name}'
 
     def save(self, *args, **kwargs):
         # Call the "real" save() method.
@@ -184,18 +184,22 @@ class Admin2Code(models.Model):
         admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
         if settings.DEBUG:
-            return u'PK{0}: {1}{2} > {3}'.format(self.geonameid, self.country.name,
-                                                    ' > ' + admin1_name if admin1_name else '',
-                                                    self.name)
-        return u'{0}, {1}{2}'.format(self.name,
-                                        admin1_name + ', ' if admin1_name else '',
-                                        self.country.name)
+            return 'PK{0}: {1}{2} > {3}'.format(self.geonameid, self.country.name,
+                                                ' > ' + admin1_name if admin1_name else '',
+                                                self.name)
+        return '{0}, {1}{2}'.format(self.name,
+                                    admin1_name + ', ' if admin1_name else '',
+                                    self.country.name)
 
     def save(self, *args, **kwargs):
         # Check consistency
         if self.admin1 is not None and self.admin1.country != self.country:
-            raise ValueError("The country '{}' from the Admin1 '{}' is different than the country '{}' from the Admin2 '{}' and geonameid {}".format(
-                                self.admin1.country, self.admin1, self.country, self.name, self.geonameid))
+            raise ValueError(f"""The country '{self.admin1.country}'
+                from the Admin1 '{self.admin1}' is different
+                than the country '{self.country}'
+                from the Admin2 '{self.name}'
+                and geonameid {self.geonameid}"""
+            )
 
         # Call the "real" save() method.
         super(Admin2Code, self).save(*args, **kwargs)
@@ -227,14 +231,14 @@ class Locality(models.Model):
         admin2_name = None
         if self.admin2: admin2_name = self.admin2.name
         if settings.DEBUG:
-            return u'PK{0}: {1}{2}{3} > {4}'.format(self.geonameid, self.country.name,
-                                        ' > ' + admin1_name  if admin1_name else '',
-                                        ' > ' + admin2_name + ' > ' if admin2_name else '',
-                                        self.name)
-        return u'{0}{1}{2}, {3}'.format(self.name,
-                                        ', ' + admin2_name if admin2_name else '',
-                                        ', ' + admin1_name if admin1_name else '',
-                                        self.country.name)
+            return 'PK{0}: {1}{2}{3} > {4}'.format(self.geonameid, self.country.name,
+                                                   ' > ' + admin1_name  if admin1_name else '',
+                                                   ' > ' + admin2_name + ' > ' if admin2_name else '',
+                                                   self.name)
+        return '{0}{1}{2}, {3}'.format(self.name,
+                                       ', ' + admin2_name if admin2_name else '',
+                                       ', ' + admin1_name if admin1_name else '',
+                                       self.country.name)
 
     def save(self, check_duplicated_longname=True, *args, **kwargs):
         # Update long_name
@@ -246,16 +250,20 @@ class Locality(models.Model):
             other_localities = other_localities.exclude(geonameid=self.geonameid)
 
             if other_localities.count() > 0:
-                raise ValueError("Duplicated locality long name '{}'".format(self.long_name))
+                raise ValueError(f"Duplicated locality long name '{self.long_name}'")
 
         # Check consistency
         if self.admin1 is not None and self.admin1.country != self.country:
-            raise ValueError("The country '{}' from the Admin1 '{}' is different than the country '{}' from the locality '{}'".format(
-                            self.admin1.country, self.admin1, self.country, self.long_name))
+            raise ValueError(f"""The country '{self.admin1.country}'
+                from the Admin1 '{self.admin1}' is different
+                than the country '{self.country}'
+                from the locality '{self.long_name}'""")
 
         if self.admin2 is not None and self.admin2.country != self.country:
-            raise ValueError("The country '{}' from the Admin2 '{}' is different than the country '{}' from the locality '{}'".format(
-                            self.admin2.country, self.admin2, self.country, self.long_name))
+            raise ValueError(f"""The country '{self.admin2.country}'
+                from the Admin2 '{self.admin2}'
+                is different than the country '{self.country}'
+                from the locality '{self.long_name}'""")
 
         self.point = Point(float(self.longitude), float(self.latitude))
 
@@ -268,7 +276,7 @@ class Locality(models.Model):
             long_name = u"{}, {}".format(long_name, self.admin2.name)
 
         if self.admin1 is not None:
-            long_name = u"{}, {}".format(long_name, self.admin1.name)
+            long_name = f"{long_name}, {self.admin1.name}"
 
         return long_name
 
@@ -360,8 +368,8 @@ class AlternateName(models.Model):
 
     def __str__(self):
         if settings.DEBUG:
-            return u'PK{0}: {1} ({2})'.format(self.alternatenameid, self.name, self.locality.name)
-        return u'{0} ({1})'.format(self.name, self.locality.name)
+            return f'PK{self.alternatenameid}: {self.name} ({self.locality.name})'
+        return f'{self.name} ({self.locality.name})'
 
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
                                  choices=BaseManager.STATUS_CHOICES)
