@@ -144,17 +144,20 @@ class Command(BaseCommand):
 
     def fix_languagecodes(self):
         print('Fixing Language codes')
-        # Corrections
-        Language.objects.filter(iso_639_1='km').update(name='Khmer')
-        Language.objects.filter(iso_639_1='ia').update(name='Interlingua')
-        Language.objects.filter(iso_639_1='ms').update(name='Malay')
-        Language.objects.filter(iso_639_1='el').update(name='Greek')
-        Language.objects.filter(iso_639_1='se').update(name='Sami')
-        Language.objects.filter(iso_639_1='oc').update(name='Occitan')
-        Language.objects.filter(iso_639_1='st').update(name='Sotho')
-        Language.objects.filter(iso_639_1='sw').update(name='Swahili')
-        Language.objects.filter(iso_639_1='to').update(name='Tonga')
-        Language.objects.filter(iso_639_1='fy').update(name='Frisian')
+        corrections = {
+            'km': 'Khmer',
+            'ia': 'Interlingua',
+            'ms': 'Malay',
+            'el': 'Greek',
+            'se': 'Sami',
+            'oc': 'Occitan',
+            'st': 'Sotho',
+            'sw': 'Swahili',
+            'to': 'Tonga',
+            'fy': 'Frisian',
+        }
+        for iso_code, name in corrections.items():
+            Language.objects.filter(iso_639_1=iso_code).update(name=name)
 
     def load_countries(self):
         print('Loading Countries')
