@@ -11,6 +11,8 @@ import sys
 import tempfile
 import shutil
 import glob
+
+
 FILES = [
     'http://download.geonames.org/export/dump/timeZones.txt',
     'http://download.geonames.org/export/dump/iso-languagecodes.txt',
@@ -29,7 +31,12 @@ geo_models = [Timezone, Language, Country, Currency,
 
 class Command(BaseCommand):
     help = "Geonames import command."
-    temp_dir_path = os.path.join(tempfile.gettempdir(), 'django-geonames-downloads')
+    if settings.DEBUG:
+        download_dir = os.path.join(os.getcwd(), 'downloads')
+    else:
+        download_dir = os.path.join(tempfile.gettempdir(), 'django-geonames-downloads')
+
+
     countries = {}
     localities = set()
 
@@ -52,7 +59,7 @@ class Command(BaseCommand):
     @transaction.atomic
     def load(self, clear=False):
         if clear:
-            self.cleanup_files()
+            # self.cleanup_files()
 
             print("Deleting data")
             for member in geo_models:
@@ -82,10 +89,13 @@ class Command(BaseCommand):
     def download_files(self):
         # make the temp folder if it dosen't exist
         try:
-            os.mkdir(self.temp_dir_path)
+            os.mkdir(self.download_dir)
         except OSError:
             pass
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
+        print()
+        print(f'Downloading files to {self.download_dir}')
+        print()
         for f in FILES:
             # --timestamping (-N) will overwrite files rather then appending .1, .2 ...
             # see http://stackoverflow.com/a/16840827/913223
@@ -94,7 +104,7 @@ class Command(BaseCommand):
                 sys.exit(1)
 
     def unzip_files(self):
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         print("Unzipping downloaded files as needed: ''." % glob.glob('*.zip'))
         for f in glob.glob('*.zip'):
             if os.system('unzip -o %s' % f) != 0:
@@ -102,12 +112,17 @@ class Command(BaseCommand):
                 sys.exit(1)
 
     def cleanup_files(self):
-        shutil.rmtree(self.temp_dir_path)
+        try:
+            print('Deleting files')
+            shutil.rmtree(self.download_dir)
+        except FileNotFoundError:
+            print('Files not present')
+            pass
 
     def load_timezones(self):
         print('Loading Timezones')
         objects = []
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         with open('timeZones.txt', 'r', encoding="utf8") as fd:
             try:
                 fd.readline()
@@ -125,7 +140,7 @@ class Command(BaseCommand):
     def load_languagecodes(self):
         print('Loading Languages')
         objects = []
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         with open('iso-languagecodes.txt', 'r', encoding="utf8") as fd:
             try:
                 fd.readline()  # skip the head
@@ -165,7 +180,7 @@ class Command(BaseCommand):
         objects = []
         langs_dic = {}
         dollar = Currency.objects.create(code='USD', name='Dollar')
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         with open('countryInfo.txt', encoding="utf8") as fd:
             try:
                 for line in fd:
@@ -213,7 +228,7 @@ class Command(BaseCommand):
     def load_admin1(self):
         print('Loading Admin1Codes')
         objects = []
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         with open('admin1CodesASCII.txt', encoding="utf8") as fd:
             try:
                 for line in fd:
@@ -239,7 +254,7 @@ class Command(BaseCommand):
         objects = []
         admin2_list = []  # to find duplicated
         skipped_duplicated = 0
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         with open('admin2Codes.txt', encoding="utf8") as fd:
             try:
                 for line in fd:
@@ -285,7 +300,7 @@ class Command(BaseCommand):
         objects = []
         batch = 10000
         processed = 0
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         with open('cities500.txt', 'r', encoding="utf8") as fd:
             for line in fd:
                 try:
@@ -398,7 +413,7 @@ class Command(BaseCommand):
         allobjects = {}
         batch = 10000
         processed = 0
-        os.chdir(self.temp_dir_path)
+        os.chdir(self.download_dir)
         with open('alternateNames.txt', 'r', encoding="utf8") as fd:
             for line in fd:
                 try:
