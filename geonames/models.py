@@ -271,9 +271,12 @@ class Locality(models.Model):
         super(Locality, self).save(*args, **kwargs)
 
     def generate_long_name(self):
-        long_name = u"{}".format(self.name)
-        if self.admin2 is not None:
-            long_name = u"{}, {}".format(long_name, self.admin2.name)
+        long_name = self.name
+        try:
+            if self.admin2 is not None:
+                long_name = f"{long_name}, {self.admin2.name}"
+        except Admin2Code.DoesNotExist:
+            pass
 
         if self.admin1 is not None:
             long_name = f"{long_name}, {self.admin1.name}"
@@ -285,7 +288,7 @@ class Locality(models.Model):
         Rough calculation of the localities at 'miles' miles of this locality.
         Is rough because calculates a square instead of a circle and the earth
         is considered as an sphere, but this calculation is fast! And we don't
-        need precission.
+        need precision.
         """
         diff_lat = Decimal(degrees(miles / EARTH_RADIUS_MI))
         latitude = Decimal(self.latitude)

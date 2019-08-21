@@ -2,6 +2,7 @@ from django.contrib.gis.geos import Point
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Count
+from django.conf import settings
 import traceback
 from geonames.models import Timezone, Language, Country, Currency, Locality, \
     Admin1Code, Admin2Code, AlternateName, GeonamesUpdate
@@ -190,7 +191,7 @@ class Command(BaseCommand):
                     fields = [field.strip() for field in line[:-1].split('\t')]
                     code = fields[0]
                     self.countries[code] = {}
-                    name = fields[4]  # str(fields[4], 'utf-8')
+                    name = fields[4]
                     currency_code = fields[10]
                     currency_name = fields[11]
                     langs_dic[code] = fields[15]
@@ -237,7 +238,6 @@ class Command(BaseCommand):
                     country_code, admin1_code = codes.split('.')
                     geonameid = fields[3]
                     self.countries[country_code][admin1_code] = {'geonameid': geonameid, 'admins2': {}}
-                    name = name  # unicode(name, 'utf-8')
                     objects.append(Admin1Code(geonameid=geonameid,
                                               code=admin1_code,
                                               name=name,
@@ -321,7 +321,6 @@ class Command(BaseCommand):
                         admin1_id = None
                         admin2_id = None
                     timezone_name = fields[17]
-                    name = name  # unicode(name, 'utf-8')
                     latitude = float(fields[4])
                     longitude = float(fields[5])
                     modification_date = fields[18]
@@ -467,6 +466,4 @@ class Command(BaseCommand):
             if len(duplicated) != 0:
                 print(f"ERROR Duplicated localities in {country}: {duplicated}")
                 print(duplicated)
-                raise Exception()
-
-
+                # raise Exception()
