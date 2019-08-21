@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.conf import settings
 import traceback
 from geonames.models import Timezone, Language, Country, Currency, Locality, \
-    Admin1Code, Admin2Code, AlternateName, GeonamesUpdate
+    Admin1Code, Admin2Code, AlternateName, GeonamesUpdate, Postcode
 import datetime
 import os
 import sys
@@ -22,12 +22,15 @@ FILES = [
     'http://download.geonames.org/export/dump/admin2Codes.txt',
     'http://download.geonames.org/export/dump/cities500.zip',
     'http://download.geonames.org/export/dump/alternateNames.zip',
+    # postcodes
+    'https://download.geonames.org/export/zip/allCountries.zip',
+    'https://download.geonames.org/export/zip/GB_full.csv.zip',
 ]
 
 # See http://www.geonames.org/export/codes.html
 city_types = ['PPL', 'PPLA', 'PPLC', 'PPLA2', 'PPLA3', 'PPLA4', 'PPLG']
 geo_models = [Timezone, Language, Country, Currency,
-              Admin1Code, Admin2Code, Locality, AlternateName]
+              Admin1Code, Admin2Code, Locality, AlternateName, Postcode]
 
 
 class Command(BaseCommand):
@@ -77,6 +80,8 @@ class Command(BaseCommand):
         self.load_timezones()
         self.load_languagecodes()
         self.load_countries()
+        self.load_postcodes()
+        self.load_postcodes('GB_full.txt')
         self.load_admin1()
         self.load_admin2()
         self.load_localities()
@@ -445,6 +450,51 @@ class Command(BaseCommand):
 
         AlternateName.objects.bulk_create(objects, ignore_conflicts=True)
         print("{0:8d} AlternateNames loaded".format(processed))
+
+    def load_postcodes(self, fn='allCountries.txt'):
+        """Load postcode files: allCountries.txt and GB_full.txt"""
+        print(f"Loading postcodes from {fn}.")
+        objects = []
+        batch = 20000
+        processed = 0
+        os.chdir(self.download_dir)
+
+        with open(fn, 'r', encoding="utf8") as fd:
+            for line in fd:
+                fields = [field.strip() for field in line.split('\t')]
+                (
+                    country_code, postal_code, place_name,
+                    admin_name1, admin_code1,
+                    admin_name2, admin_code2,
+                    admin_name3, admin_code3,
+                    latitude, longitude, accuracy
+                ) = fields
+
+                latitude = float(latitude)
+                longitude = float(longitude)
+
+                postcode = Postcode(
+                    country_id=country_code,
+                    postal_code=postal_code,
+                    place_name=place_name,
+                    admin_name1=admin_name1,
+                    admin_code1=admin_code1,
+                    admin_name2=admin_name2,
+                    admin_code2=admin_code2,
+                    admin_name3=admin_name3,
+                    admin_code3=admin_code3,
+                    latitude=latitude,
+                    longitude=longitude,
+                    point=Point(longitude, latitude),
+                    accuracy=accuracy or None
+                )
+                objects.append(postcode)
+                processed += 1
+
+                if processed % batch == 0:
+                    Postcode.objects.bulk_create(objects, ignore_conflicts=True)
+                    print("{0:8d} Postcodes loaded".format(processed))
+                    objects = []
 
     def check_errors(self):
         print('Checking errors')

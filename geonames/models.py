@@ -382,3 +382,21 @@ class AlternateName(models.Model):
     # TODO include localization code
 
     objects = BaseManager()
+
+
+class Postcode(models.Model):
+    """Postcodes"""
+    country = models.ForeignKey(Country, related_name="postcode_set", on_delete=models.CASCADE)
+    postal_code = models.CharField(max_length=20, db_index=True)
+    place_name  = models.CharField(max_length=180)
+    admin_name1 = models.CharField(blank=True, null=True, max_length=100, verbose_name='state')
+    admin_code1 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='state')
+    admin_name2 = models.CharField(blank=True, null=True, max_length=100, verbose_name='county/province')
+    admin_code2 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='county/province')
+    admin_name3 = models.CharField(blank=True, null=True, max_length=100, verbose_name='community')
+    admin_code3 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='community')
+    latitude  = models.DecimalField(max_digits=7, decimal_places=2)
+    longitude = models.DecimalField(max_digits=7, decimal_places=2)
+    point = models.PointField(geography=False)
+    # accuracy of lat/lng from 1=estimated, 4=geonameid, 6=centroid of addresses or shape
+    accuracy = models.IntegerField(blank=True, null=True)
