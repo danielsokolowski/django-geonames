@@ -363,7 +363,7 @@ class Locality(models.Model):
 class AlternateName(models.Model):
     """Other names for localities for example in different languages etc."""
     class Meta:
-        unique_together = (("locality", "name"),)
+        # unique_together = (("locality", "name"),)  # doesn't work on MySQL due to index encoding?
         ordering = ['locality__pk', 'name']
 
     def __str__(self):
