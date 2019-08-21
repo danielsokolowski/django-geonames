@@ -276,7 +276,7 @@ class Command(BaseCommand):
                 traceback.print_exc(inst)
                 raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
-        Admin2Code.objects.bulk_create(objects)
+        Admin2Code.objects.bulk_create(objects, ignore_conflicts=True)
         print('{0:8d} Admin2Codes loaded'.format(Admin2Code.objects.all().count()))
         print('{0:8d} Admin2Codes skipped because duplicated'.format(skipped_duplicated))
 
@@ -332,7 +332,7 @@ class Command(BaseCommand):
                     raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
                 if processed % batch == 0:
-                    Locality.objects.bulk_create(objects)
+                    Locality.objects.bulk_create(objects, ignore_conflicts=True)
                     print("{0:8d} Localities loaded".format(processed))
                     objects = []
 
@@ -425,11 +425,11 @@ class Command(BaseCommand):
                     raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
                 if processed % batch == 0:
-                    AlternateName.objects.bulk_create(objects)
+                    AlternateName.objects.bulk_create(objects, ignore_conflicts=True)
                     print("{0:8d} AlternateNames loaded".format(processed))
                     objects = []
 
-        AlternateName.objects.bulk_create(objects)
+        AlternateName.objects.bulk_create(objects, ignore_conflicts=True)
         print("{0:8d} AlternateNames loaded".format(processed))
 
     def check_errors(self):
