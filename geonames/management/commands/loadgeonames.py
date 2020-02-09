@@ -40,7 +40,6 @@ class Command(BaseCommand):
     else:
         download_dir = os.path.join(tempfile.gettempdir(), 'django-geonames-downloads')
 
-
     countries = {}
     localities = set()
 
@@ -81,12 +80,12 @@ class Command(BaseCommand):
         self.load_languagecodes()
         self.load_countries()
         self.load_postcodes()
-        self.load_postcodes('GB_full.txt')
         self.load_admin1()
         self.load_admin2()
         self.load_localities()
         self.cleanup()
         self.load_altnames()
+        self.load_postcodes('GB_full.txt')
         self.check_errors()
 
         # Save the time when the load happened
@@ -236,20 +235,17 @@ class Command(BaseCommand):
         objects = []
         os.chdir(self.download_dir)
         with open('admin1CodesASCII.txt', encoding="utf8") as fd:
-            try:
-                for line in fd:
-                    fields = [field.strip() for field in line[:-1].split('\t')]
-                    codes, name = fields[0:2]
-                    country_code, admin1_code = codes.split('.')
-                    geonameid = fields[3]
-                    self.countries[country_code][admin1_code] = {'geonameid': geonameid, 'admins2': {}}
-                    objects.append(Admin1Code(geonameid=geonameid,
-                                              code=admin1_code,
-                                              name=name,
-                                              country_id=country_code))
-            except Exception as inst:
-                traceback.print_exc(inst)
-                raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
+            for line in fd:
+                fields = [field.strip() for field in line[:-1].split('\t')]
+                codes, name = fields[0:2]
+                country_code, admin1_code = codes.split('.')
+                geonameid = fields[3]
+                self.countries[country_code][admin1_code] = {'geonameid': geonameid, 'admins2': {}}
+                objects.append(Admin1Code(geonameid=geonameid,
+                                          code=admin1_code,
+                                          name=name,
+                                          country_id=country_code))
+
 
         Admin1Code.objects.bulk_create(objects)
         print('{0:8d} Admin1Codes loaded'.format(Admin1Code.objects.all().count()))
@@ -337,7 +333,7 @@ class Command(BaseCommand):
                         admin2_id=admin2_id,
                         latitude=latitude,
                         longitude=longitude,
-                        point=Point(longitude, latitude),
+                        point=Point(latitude, longitude),
                         timezone_id=timezone_name,
                         population=population,
                         modification_date=modification_date
@@ -485,7 +481,7 @@ class Command(BaseCommand):
                     admin_code3=admin_code3,
                     latitude=latitude,
                     longitude=longitude,
-                    point=Point(longitude, latitude),
+                    point=Point(latitude, longitude),
                     accuracy=accuracy or None
                 )
                 objects.append(postcode)

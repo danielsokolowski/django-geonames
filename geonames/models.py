@@ -219,6 +219,29 @@ class Admin2Code(models.Model):
     admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="admin2_set", on_delete=models.CASCADE)
 
 
+def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
+    """
+    Rough calculation of the places at 'miles' miles of this place.
+    Is rough because calculates a square instead of a circle and the earth
+    is considered as an sphere, but this calculation is fast! And we don't
+    need precision.
+    """
+    diff_lat = Decimal(degrees(miles / EARTH_RADIUS_MI))
+    latitude = Decimal(latitude)
+    longitude = Decimal(longitude)
+    max_lat = latitude + diff_lat
+    min_lat = latitude - diff_lat
+    diff_long = Decimal(degrees(miles / EARTH_RADIUS_MI / cos(radians(latitude))))
+    max_long = longitude + diff_long
+    min_long = longitude - diff_long
+    if sql:
+        return f"""
+            latitude >= {min_lat:.6f} AND longitude >= {min_long:.6f} AND
+            latitude <= {max_lat:.6f} AND longitude <= {max_long:.6f} AND"""
+    return place_type_model.objects.filter(latitude__gte=min_lat, longitude__gte=min_long)\
+                           .filter(latitude__lte=max_lat, longitude__lte=max_long)
+
+
 class Locality(models.Model):
     """Localities - cities, towns, villages, etc"""
     class Meta:
@@ -283,24 +306,12 @@ class Locality(models.Model):
 
         return long_name
 
+    @property
+    def title(self):
+        return self.generate_long_name()
+
     def near_localities_rough(self, miles):
-        """
-        Rough calculation of the localities at 'miles' miles of this locality.
-        Is rough because calculates a square instead of a circle and the earth
-        is considered as an sphere, but this calculation is fast! And we don't
-        need precision.
-        """
-        diff_lat = Decimal(degrees(miles / EARTH_RADIUS_MI))
-        latitude = Decimal(self.latitude)
-        longitude = Decimal(self.longitude)
-        max_lat = latitude + diff_lat
-        min_lat = latitude - diff_lat
-        diff_long = Decimal(degrees(miles / EARTH_RADIUS_MI / cos(radians(latitude))))
-        max_long = longitude + diff_long
-        min_long = longitude - diff_long
-        near_localities = Locality.objects.filter(latitude__gte=min_lat, longitude__gte=min_long)
-        near_localities = near_localities.filter(latitude__lte=max_lat, longitude__lte=max_long)
-        return near_localities
+        return near_places_rough(Locality, self.latitude, self.longitude, miles)
 
     def near_locals_nogis(self, miles):
         ids = []
@@ -359,7 +370,7 @@ class Locality(models.Model):
     population = models.PositiveIntegerField()
     latitude = models.DecimalField(max_digits=7, decimal_places=2)
     longitude = models.DecimalField(max_digits=7, decimal_places=2)
-    point = models.PointField(geography=False)
+    point = models.PointField(geography=False, srid=4326)
     modification_date = models.DateField()
 
 
@@ -388,15 +399,22 @@ class Postcode(models.Model):
     """Postcodes"""
     country = models.ForeignKey(Country, related_name="postcode_set", on_delete=models.CASCADE)
     postal_code = models.CharField(max_length=20, db_index=True)
-    place_name  = models.CharField(max_length=180)
+    place_name = models.CharField(max_length=180)
     admin_name1 = models.CharField(blank=True, null=True, max_length=100, verbose_name='state')
     admin_code1 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='state')
     admin_name2 = models.CharField(blank=True, null=True, max_length=100, verbose_name='county/province')
     admin_code2 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='county/province')
     admin_name3 = models.CharField(blank=True, null=True, max_length=100, verbose_name='community')
     admin_code3 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='community')
-    latitude  = models.DecimalField(max_digits=7, decimal_places=2)
+    latitude = models.DecimalField(max_digits=7, decimal_places=2)
     longitude = models.DecimalField(max_digits=7, decimal_places=2)
-    point = models.PointField(geography=False)
+    point = models.PointField(geography=False, srid=4326)
     # accuracy of lat/lng from 1=estimated, 4=geonameid, 6=centroid of addresses or shape
     accuracy = models.IntegerField(blank=True, null=True)
+
+    def near_localities_rough(self, miles):
+        return near_places_rough(Locality, self.latitude, self.longitude, miles)
+
+    @property
+    def name(self):
+        return self.postal_code
