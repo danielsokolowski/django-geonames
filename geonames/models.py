@@ -1,13 +1,15 @@
 from django.conf import settings
-# from django.contrib.gis.db import models
 from django.db.models import Manager as GeoManager
 
-from decimal import Decimal
-from django.contrib.gis.db import models
-from django.contrib.gis.measure import D
+from django.db import models
+# from django.contrib.gis.measure import D
+D = {}
 from django.db.models import Q
 from math import degrees, radians, cos, sin, acos, pi, fabs
-from django.contrib.gis.geos import Point
+from collections import namedtuple
+from decimal import Decimal
+
+Point = namedtuple('Point', 'x y')
 
 
 class BaseManager(GeoManager):
@@ -67,8 +69,8 @@ class Timezone(models.Model):
         hours = int(gmt)
         minutes = int((gmt - hours) * 60)
         if settings.DEBUG:
-            return u"PK{0} UTC{1}{2:02d}:{3:02d}".format('PK' + self.pk, sign, hours, minutes)
-        return u"{0} UTC{1}{2:02d}:{3:02d}".format(self.name, sign, hours, minutes)
+            return f"PK{'PK' + self.pk} UTC{sign}{hours:02d}:{minutes:02d}"
+        return f"{self.name} UTC{sign}{hours:02d}:{minutes:02d}"
 
     objects = BaseManager()
 
@@ -105,8 +107,8 @@ class Currency(models.Model):
 
     def __str__(self):
         if settings.DEBUG:
-            return u"PK{0}: {1}".format(self.code, self.name)
-        return u"{0} - {1}".format(self.code, self.name)
+            return f"PK{self.code}: {self.name}"
+        return f"{self.code} - {self.name}"
 
     objects = BaseManager()
 
@@ -236,10 +238,10 @@ def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
     min_long = longitude - diff_long
     if sql:
         return f"""
-            latitude >= {min_lat:.6f} AND longitude >= {min_long:.6f} AND
-            latitude <= {max_lat:.6f} AND longitude <= {max_long:.6f} AND"""
-    return place_type_model.objects.filter(latitude__gte=min_lat, longitude__gte=min_long)\
-                           .filter(latitude__lte=max_lat, longitude__lte=max_long)
+            lat >= {min_lat:.6f} AND lon >= {min_long:.6f} AND
+            lat <= {max_lat:.6f} AND lon <= {max_long:.6f} AND"""
+    return place_type_model.objects.filter(lat__gte=min_lat, lon__gte=min_long)\
+                                   .filter(lat__lte=max_lat, lon__lte=max_long)
 
 
 class Locality(models.Model):
@@ -288,7 +290,7 @@ class Locality(models.Model):
                 is different than the country '{self.country}'
                 from the locality '{self.long_name}'""")
 
-        self.point = Point(float(self.longitude), float(self.latitude))
+        self.point = Point(float(self.lon), float(self.lat))
 
         # Call the "real" save() method.
         super(Locality, self).save(*args, **kwargs)
@@ -311,7 +313,7 @@ class Locality(models.Model):
         return self.generate_long_name()
 
     def near_localities_rough(self, miles):
-        return near_places_rough(Locality, self.latitude, self.longitude, miles)
+        return near_places_rough(Locality, self.lat, self.lon, miles)
 
     def near_locals_nogis(self, miles):
         ids = []
@@ -331,11 +333,11 @@ class Locality(models.Model):
         # Convert latitude and longitude to
         # spherical coordinates in radians.
         # phi = 90 - latitude
-        phi1 = (90.0 - float(self.latitude)) * DEGREES_TO_RADIANS
+        phi1 = (90.0 - float(self.lat)) * DEGREES_TO_RADIANS
         phi2 = (90.0 - float(la2)) * DEGREES_TO_RADIANS
 
         # theta = longitude
-        theta1 = float(self.longitude) * DEGREES_TO_RADIANS
+        theta1 = float(self.lon) * DEGREES_TO_RADIANS
         theta2 = float(lo2) * DEGREES_TO_RADIANS
 
         # Compute spherical distance from spherical coordinates.
@@ -368,9 +370,9 @@ class Locality(models.Model):
     admin2 = models.ForeignKey(Admin2Code, null=True, blank=True, related_name="locality_set", on_delete=models.CASCADE)
     timezone = models.ForeignKey(Timezone, related_name="locality_set", null=True, on_delete=models.CASCADE)
     population = models.PositiveIntegerField()
-    latitude = models.DecimalField(max_digits=7, decimal_places=2)
-    longitude = models.DecimalField(max_digits=7, decimal_places=2)
-    point = models.PointField(geography=False, srid=4326)
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+    lon = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+
     modification_date = models.DateField()
 
 
@@ -406,14 +408,14 @@ class Postcode(models.Model):
     admin_code2 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='county/province')
     admin_name3 = models.CharField(blank=True, null=True, max_length=100, verbose_name='community')
     admin_code3 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='community')
-    latitude = models.DecimalField(max_digits=7, decimal_places=2)
-    longitude = models.DecimalField(max_digits=7, decimal_places=2)
-    point = models.PointField(geography=False, srid=4326)
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+    lon = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+
     # accuracy of lat/lng from 1=estimated, 4=geonameid, 6=centroid of addresses or shape
     accuracy = models.IntegerField(blank=True, null=True)
 
     def near_localities_rough(self, miles):
-        return near_places_rough(Locality, self.latitude, self.longitude, miles)
+        return near_places_rough(Locality, self.lat, self.lon, miles)
 
     @property
     def name(self):

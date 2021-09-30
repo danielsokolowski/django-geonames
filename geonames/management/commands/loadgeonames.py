@@ -57,7 +57,7 @@ class Command(BaseCommand):
             self.load(clear=True)
         else:
             self.load()
-        print('\nCompleted in {}'.format(datetime.datetime.now() - start_time))
+        print(f'\nCompleted in {datetime.datetime.now() - start_time}')
 
     @transaction.atomic
     def load(self, clear=False):
@@ -104,7 +104,7 @@ class Command(BaseCommand):
         for f in FILES:
             # --timestamping (-N) will overwrite files rather then appending .1, .2 ...
             # see http://stackoverflow.com/a/16840827/913223
-            if os.system('wget --timestamping %s' % f) != 0:
+            if os.system(f'wget --timestamping {f}') != 0:
                 print(f"ERROR fetching {os.path.basename(f)}. Perhaps you are missing the 'wget' utility.")
                 sys.exit(1)
 
@@ -112,7 +112,7 @@ class Command(BaseCommand):
         os.chdir(self.download_dir)
         print("Unzipping downloaded files as needed: ''." % glob.glob('*.zip'))
         for f in glob.glob('*.zip'):
-            if os.system('unzip -o %s' % f) != 0:
+            if os.system(f'unzip -o {f}') != 0:
                 print(f"ERROR unzipping {f}. Perhaps you are missing the 'unzip' utility.")
                 sys.exit(1)
 
@@ -140,7 +140,7 @@ class Command(BaseCommand):
                 raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Timezone.objects.bulk_create(objects)
-        print('{0:8d} Timezones loaded'.format(Timezone.objects.all().count()))
+        print(f'{Timezone.objects.all().count():8d} Timezones loaded')
 
     def load_languagecodes(self):
         print('Loading Languages')
@@ -160,7 +160,7 @@ class Command(BaseCommand):
                 raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Language.objects.bulk_create(objects)
-        print('{0:8d} Languages loaded'.format(Timezone.objects.all().count()))
+        print(f'{Timezone.objects.all().count():8d} Languages loaded')
         self.fix_languagecodes()
 
     def fix_languagecodes(self):
@@ -213,7 +213,7 @@ class Command(BaseCommand):
                 raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Country.objects.bulk_create(objects)
-        print('{0:8d} Countries loaded'.format(Country.objects.all().count()))
+        print(f'{Country.objects.all().count():8d} Countries loaded')
 
         print('Adding Languages to Countries')
         default_lang = Language.objects.get(iso_639_1='en')
@@ -248,7 +248,7 @@ class Command(BaseCommand):
 
 
         Admin1Code.objects.bulk_create(objects)
-        print('{0:8d} Admin1Codes loaded'.format(Admin1Code.objects.all().count()))
+        print(f'{Admin1Code.objects.all().count():8d} Admin1Codes loaded')
 
     def load_admin2(self):
         print('Loading Admin2Codes')
@@ -293,8 +293,8 @@ class Command(BaseCommand):
                 raise Exception(f"ERROR parsing:\n {line}\n The error was: {inst}")
 
         Admin2Code.objects.bulk_create(objects, ignore_conflicts=True)
-        print('{0:8d} Admin2Codes loaded'.format(Admin2Code.objects.all().count()))
-        print('{0:8d} Admin2Codes skipped because duplicated'.format(skipped_duplicated))
+        print(f'{Admin2Code.objects.all().count():8d} Admin2Codes loaded')
+        print(f'{skipped_duplicated:8d} Admin2Codes skipped because duplicated')
 
     def load_localities(self):
         print('Loading Localities')
@@ -348,11 +348,11 @@ class Command(BaseCommand):
 
                 if processed % batch == 0:
                     Locality.objects.bulk_create(objects, ignore_conflicts=True)
-                    print("{0:8d} Localities loaded".format(processed))
+                    print(f"{processed:8d} Localities loaded")
                     objects = []
 
         Locality.objects.bulk_create(objects)
-        print("{0:8d} Localities loaded".format(processed))
+        print(f"{processed:8d} Localities loaded")
 
         print('Filling missed timezones in localities')
         # Try to find the missing timezones
@@ -390,7 +390,7 @@ class Command(BaseCommand):
             c.status = Country.objects.STATUS_DISABLED
             c.save()
 
-        print(" {0:8d} Countries set status 'STATUS_DISABLED'".format(countries.count()))
+        print(f" {countries.count():8d} Countries set status 'STATUS_DISABLED'")
 
     def delete_duplicated_localities(self):
         print("Setting as deleted duplicated localities")
@@ -405,7 +405,7 @@ class Command(BaseCommand):
 
                 prev_name = loc.long_name
 
-        print(" {0:8d} localities set as 'STATUS_DISABLED'".format(total))
+        print(f" {total:8d} localities set as 'STATUS_DISABLED'")
 
     def load_altnames(self):
         print('Loading alternate names')
@@ -441,11 +441,11 @@ class Command(BaseCommand):
 
                 if processed % batch == 0:
                     AlternateName.objects.bulk_create(objects, ignore_conflicts=True)
-                    print("{0:8d} AlternateNames loaded".format(processed))
+                    print(f"{processed:8d} AlternateNames loaded")
                     objects = []
 
         AlternateName.objects.bulk_create(objects, ignore_conflicts=True)
-        print("{0:8d} AlternateNames loaded".format(processed))
+        print(f"{processed:8d} AlternateNames loaded")
 
     def load_postcodes(self, fn='allCountries.txt'):
         """Load postcode files: allCountries.txt and GB_full.txt"""
@@ -489,7 +489,7 @@ class Command(BaseCommand):
 
                 if processed % batch == 0:
                     Postcode.objects.bulk_create(objects, ignore_conflicts=True)
-                    print("{0:8d} Postcodes loaded".format(processed))
+                    print(f"{processed:8d} Postcodes loaded")
                     objects = []
 
     def check_errors(self):
