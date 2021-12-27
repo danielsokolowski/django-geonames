@@ -1,13 +1,14 @@
 from django.conf import settings
+from django.db import models
 from django.db.models import Manager as GeoManager
 
-from django.db import models
 # from django.contrib.gis.measure import D
 D = {}
-from django.db.models import Q
-from math import degrees, radians, cos, sin, acos, pi, fabs
 from collections import namedtuple
 from decimal import Decimal
+from math import acos, cos, degrees, fabs, pi, radians, sin
+
+from django.db.models import Q
 
 Point = namedtuple('Point', 'x y')
 

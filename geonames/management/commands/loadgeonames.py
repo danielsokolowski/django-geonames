@@ -1,18 +1,20 @@
+import datetime
+import glob
+import os
+import shutil
+import sys
+import tempfile
+import traceback
+
+from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Count
-from django.conf import settings
-import traceback
-from geonames.models import Timezone, Language, Country, Currency, Locality, \
-    Admin1Code, Admin2Code, AlternateName, GeonamesUpdate, Postcode
-import datetime
-import os
-import sys
-import tempfile
-import shutil
-import glob
 
+from geonames.models import (Admin1Code, Admin2Code, AlternateName, Country,
+                             Currency, GeonamesUpdate, Language, Locality,
+                             Postcode, Timezone)
 
 FILES = [
     'http://download.geonames.org/export/dump/timeZones.txt',

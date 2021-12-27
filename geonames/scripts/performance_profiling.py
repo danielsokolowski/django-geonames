@@ -1,5 +1,6 @@
-from geonames.models import Country
 import datetime
+
+from geonames.models import Country
 
 MAX_LOCATIONS = 500
 
