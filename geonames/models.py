@@ -1,8 +1,8 @@
-from decimal import Decimal
-from math import degrees, radians, cos, sin, acos, pi, fabs
+from django.template.defaultfilters import slugify
+
+from math import acos, cos, degrees, fabs, pi, radians, sin
 
 from django.conf import settings
-from django.contrib.gis.measure import D
 from django.db import models
 from django.db.models import Manager as GeoManager
 from django.db.models import Q
@@ -14,6 +14,7 @@ GIS_LIBRARIES = getattr(settings, 'GIS_LIBRARIES', False)
 if GIS_LIBRARIES:
     from django.contrib.gis.geos import Point
     from django.contrib.gis.db import models
+    from django.contrib.gis.measure import D
 
 
 class BaseManager(GeoManager):
@@ -73,8 +74,8 @@ class Timezone(models.Model):
         hours = int(gmt)
         minutes = int((gmt - hours) * 60)
         if settings.DEBUG:
-            return u"PK{0} UTC{1}{2:02d}:{3:02d}".format('PK' + self.pk, sign, hours, minutes)
-        return u"{0} UTC{1}{2:02d}:{3:02d}".format(self.name, sign, hours, minutes)
+            return f"PK{'PK' + self.pk} UTC{sign}{hours:02d}:{minutes:02d}"
+        return f"{self.name} UTC{sign}{hours:02d}:{minutes:02d}"
 
     objects = BaseManager()
 
@@ -111,8 +112,8 @@ class Currency(models.Model):
 
     def __str__(self):
         if settings.DEBUG:
-            return u"PK{0}: {1}".format(self.code, self.name)
-        return u"{0} - {1}".format(self.code, self.name)
+            return f"PK{self.code}: {self.name}"
+        return f"{self.code} - {self.name}"
 
     objects = BaseManager()
 
@@ -252,10 +253,10 @@ def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
     min_long = longitude - diff_long
     if sql:
         return f"""
-            latitude >= {min_lat:.6f} AND longitude >= {min_long:.6f} AND
-            latitude <= {max_lat:.6f} AND longitude <= {max_long:.6f} AND"""
-    return place_type_model.objects.filter(latitude__gte=min_lat, longitude__gte=min_long)\
-                           .filter(latitude__lte=max_lat, longitude__lte=max_long)
+            lat >= {min_lat:.6f} AND lon >= {min_long:.6f} AND
+            lat <= {max_lat:.6f} AND lon <= {max_long:.6f} AND"""
+    return place_type_model.objects.filter(lat__gte=min_lat, lon__gte=min_long)\
+                                   .filter(lat__lte=max_lat, lon__lte=max_long)
 
 
 def calc_dist_nogis(la1, lo1, la2, lo2):
@@ -336,7 +337,8 @@ class Locality(models.Model):
                 is different than the country '{self.country}'
                 from the locality '{self.long_name}'""")
 
-        self.point = Point(float(self.longitude), float(self.latitude))
+        if GIS_LIBRARIES:
+            self.point = Point(float(self.lon), float(self.lat))
 
         if update_handle or not self.slug:
             self.slug = slugify(self.name)[:35]
@@ -362,7 +364,7 @@ class Locality(models.Model):
         return self.generate_long_name()
 
     def near_localities_rough(self, miles):
-        return near_places_rough(Locality, self.latitude, self.longitude, miles)
+        return near_places_rough(Locality, self.lat, self.lon, miles)
 
     def near_locals_nogis(self, miles):
         ids = []
@@ -380,7 +382,7 @@ class Locality(models.Model):
         return ids
 
     def calc_distance_nogis(self, la2, lo2):
-        return calc_dist_nogis(self.latitude, self.longitude, la2, lo2)
+        return calc_dist_nogis(self.lat, self.lon, la2, lo2)
 
     def near_localities(self, miles):
         if not GIS_LIBRARIES:
@@ -401,8 +403,8 @@ class Locality(models.Model):
     admin2 = models.ForeignKey(Admin2Code, null=True, blank=True, related_name="locality_set", on_delete=models.CASCADE)
     timezone = models.ForeignKey(Timezone, related_name="locality_set", null=True, on_delete=models.CASCADE)
     population = models.PositiveIntegerField()
-    latitude = models.DecimalField(max_digits=7, decimal_places=2)
-    longitude = models.DecimalField(max_digits=7, decimal_places=2)
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+    lon = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     if GIS_LIBRARIES:
         point = models.PointField(geography=False, srid=4326)
     modification_date = models.DateField()
@@ -441,15 +443,16 @@ class Postcode(models.Model):
     admin_code2 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='county/province')
     admin_name3 = models.CharField(blank=True, null=True, max_length=100, verbose_name='community')
     admin_code3 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='community')
-    latitude = models.DecimalField(max_digits=7, decimal_places=2)
-    longitude = models.DecimalField(max_digits=7, decimal_places=2)
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+    lon = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     if GIS_LIBRARIES:
         point = models.PointField(geography=False, srid=4326)
+
     # accuracy of lat/lng from 1=estimated, 4=geonameid, 6=centroid of addresses or shape
     accuracy = models.IntegerField(blank=True, null=True)
 
     def near_localities_rough(self, miles):
-        return near_places_rough(Locality, self.latitude, self.longitude, miles)
+        return near_places_rough(Locality, self.lat, self.lon, miles)
 
     def title(self):
         return f'{self.postal_code}, {self.place_name}'

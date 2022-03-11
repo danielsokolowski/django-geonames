@@ -1,5 +1,6 @@
-from geonames.models import Country
 import datetime
+
+from geonames.models import Country
 
 MAX_LOCATIONS = 500
 
@@ -43,17 +44,17 @@ if __name__ == "__main__":
     # Name search
     country = Country.objects.get(code="GB")
     time = profile_search_location(country)
-    print('Locations search completed in {} for all the locations in {}'.format(time, country))
+    print(f'Locations search completed in {time} for all the locations in {country}')
 
     # Distances
     country = Country.objects.get(code="GB")
     distance = 200
 
     time = profile_near_locations_rough(country, distance)
-    print('Near locations rough search completed in {} for cities in {} at {} miles'.format(time, country, distance))
+    print(f'Near locations rough search completed in {time} for cities in {country} at {distance} miles')
 
     time = profile_near_locations_nogis(country, distance)
-    print('Near locations NO GIS search completed in {} for cities in {} at {} miles'.format(time, country, distance))
+    print(f'Near locations NO GIS search completed in {time} for cities in {country} at {distance} miles')
 
     time = profile_near_locations_gis(country, distance)
-    print('Near locations with GIS search completed in {} for cities in {} at {} miles'.format(time, country, distance))
+    print(f'Near locations with GIS search completed in {time} for cities in {country} at {distance} miles')
