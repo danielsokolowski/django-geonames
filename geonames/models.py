@@ -1,13 +1,19 @@
-from django.conf import settings
-# from django.contrib.gis.db import models
-from django.db.models import Manager as GeoManager
-
 from decimal import Decimal
-from django.contrib.gis.db import models
-from django.contrib.gis.measure import D
-from django.db.models import Q
 from math import degrees, radians, cos, sin, acos, pi, fabs
-from django.contrib.gis.geos import Point
+
+from django.conf import settings
+from django.contrib.gis.measure import D
+from django.db import models
+from django.db.models import Manager as GeoManager
+from django.db.models import Q
+from django.template.defaultfilters import slugify
+
+from geonames.admin2_stopwords import trim_stopwords, admin2_stopwords
+
+GIS_LIBRARIES = getattr(settings, 'GIS_LIBRARIES', False)
+if GIS_LIBRARIES:
+    from django.contrib.gis.geos import Point
+    from django.contrib.gis.db import models
 
 
 class BaseManager(GeoManager):
@@ -177,36 +183,45 @@ class Admin1Code(models.Model):
 class Admin2Code(models.Model):
     """Administrative subdivision"""
     class Meta:
-        unique_together = (("country", "admin1", "name"),)
+        unique_together = (('country', 'admin1', 'name'),)
         ordering = ['country', 'admin1', 'name']
 
     def __str__(self):
         admin1_name = None
         if self.admin1: admin1_name = self.admin1.name
         if settings.DEBUG:
-            return 'PK{0}: {1}{2} > {3}'.format(self.geonameid, self.country.name,
-                                                ' > ' + admin1_name if admin1_name else '',
-                                                self.name)
-        return '{0}, {1}{2}'.format(self.name,
-                                    admin1_name + ', ' if admin1_name else '',
-                                    self.country.name)
+            return 'PK{0}: {1}{2} > {3}'.format(
+                self.geonameid, self.country.name,
+                ' > ' + admin1_name if admin1_name else '', self.name)
+        return '{0}, {1}{2}'.format(
+            self.name, admin1_name + ', ' if admin1_name else '', self.country.name)
 
-    def save(self, *args, **kwargs):
+    def get_absolute_url(self, segment=''):
+        url = f'/{self.slug}/'
+        if segment:
+            return f'/{segment}{url}'
+        return url
+
+    def save(self, update_localities_longname=True, update_handle=False, *args, **kwargs):
         # Check consistency
         if self.admin1 is not None and self.admin1.country != self.country:
-            raise ValueError(f"""The country '{self.admin1.country}'
+            raise ValueError(
+                f"""The country '{self.admin1.country}'
                 from the Admin1 '{self.admin1}' is different
                 than the country '{self.country}'
                 from the Admin2 '{self.name}'
                 and geonameid {self.geonameid}"""
             )
+        if update_handle or not self.slug:
+            self.slug = slugify(trim_stopwords(self.name, admin2_stopwords))[:35]
 
         # Call the "real" save() method.
         super(Admin2Code, self).save(*args, **kwargs)
 
         # Update child localities long name
-        for loc in self.localities.all():
-            loc.save()
+        if update_localities_longname:
+            for loc in self.locality_set.all():
+                loc.save()
 
     objects = BaseManager()
 
@@ -217,6 +232,7 @@ class Admin2Code(models.Model):
     name = models.CharField(max_length=200)
     country = models.ForeignKey(Country, related_name="admin2_set", on_delete=models.CASCADE)
     admin1 = models.ForeignKey(Admin1Code, null=True, blank=True, related_name="admin2_set", on_delete=models.CASCADE)
+    slug = models.CharField(max_length=35, db_index=True, blank=True, null=True)
 
 
 def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
@@ -242,9 +258,35 @@ def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
                            .filter(latitude__lte=max_lat, longitude__lte=max_long)
 
 
+def calc_dist_nogis(la1, lo1, la2, lo2):
+    # Convert latitude and longitude to
+    # spherical coordinates in radians.
+    # phi = 90 - latitude
+    phi1 = (90.0 - float(la1)) * DEGREES_TO_RADIANS
+    phi2 = (90.0 - float(la2)) * DEGREES_TO_RADIANS
+
+    # theta = longitude
+    theta1 = float(lo1) * DEGREES_TO_RADIANS
+    theta2 = float(lo2) * DEGREES_TO_RADIANS
+
+    # Compute spherical distance from spherical coordinates.
+    # For two localities in spherical coordinates
+    # (1, theta, phi) and (1, theta, phi)
+    # cosine( arc length ) =
+    #    sin phi sin phi' cos(theta-theta') + cos phi cos phi'
+    # distance = rho * arc length
+    cosinus = sin(phi1) * sin(phi2) * cos(theta1 - theta2) + cos(phi1) * cos(phi2)
+    cosinus = round(cosinus, 14)  # to avoid math domain error in acos
+    arc = acos(cosinus)
+
+    # Multiply arc by the radius of the earth
+    return arc * EARTH_RADIUS_MI
+
+
 class Locality(models.Model):
     """Localities - cities, towns, villages, etc"""
     class Meta:
+        # unique_together = ('country', 'admin1', 'admin2', 'slug')
         ordering = ['country', 'admin1', 'admin2', 'long_name']
         verbose_name_plural = 'Localities'
 
@@ -254,16 +296,22 @@ class Locality(models.Model):
         admin2_name = None
         if self.admin2: admin2_name = self.admin2.name
         if settings.DEBUG:
-            return 'PK{0}: {1}{2}{3} > {4}'.format(self.geonameid, self.country.name,
-                                                   ' > ' + admin1_name  if admin1_name else '',
-                                                   ' > ' + admin2_name + ' > ' if admin2_name else '',
-                                                   self.name)
-        return '{0}{1}{2}, {3}'.format(self.name,
-                                       ', ' + admin2_name if admin2_name else '',
-                                       ', ' + admin1_name if admin1_name else '',
-                                       self.country.name)
+            return 'PK{0}: {1}{2}{3} > {4}'.format(
+                self.geonameid, self.country.name,
+                ' > ' + admin1_name if admin1_name else '',
+                ' > ' + admin2_name + ' > ' if admin2_name else '', self.name)
+        return '{0}{1}{2}, {3}'.format(
+            self.name,
+            ', ' + admin2_name if admin2_name else '',
+            ', ' + admin1_name if admin1_name else '', self.country.name)
 
-    def save(self, check_duplicated_longname=True, *args, **kwargs):
+    def get_absolute_url(self, segment='', admin2_slug=None):
+        url = f'/{admin2_slug or self.admin2.slug}/{self.slug}'
+        if segment:
+            return f'/{segment}{url}'
+        return url
+
+    def save(self, check_duplicated_longname=True, update_handle=False, *args, **kwargs):
         # Update long_name
         self.long_name = self.generate_long_name()
 
@@ -290,6 +338,9 @@ class Locality(models.Model):
 
         self.point = Point(float(self.longitude), float(self.latitude))
 
+        if update_handle or not self.slug:
+            self.slug = slugify(self.name)[:35]
+
         # Call the "real" save() method.
         super(Locality, self).save(*args, **kwargs)
 
@@ -315,7 +366,8 @@ class Locality(models.Model):
 
     def near_locals_nogis(self, miles):
         ids = []
-        for loc in self.near_localities_rough(miles).values_list("geonameid", "latitude", "longitude"):
+        for loc in self.near_localities_rough(miles).values_list(
+                "geonameid", "latitude", "longitude"):
             other_geonameid = loc[0]
             if self.geonameid == other_geonameid:
                 distance = 0
@@ -328,30 +380,11 @@ class Locality(models.Model):
         return ids
 
     def calc_distance_nogis(self, la2, lo2):
-        # Convert latitude and longitude to
-        # spherical coordinates in radians.
-        # phi = 90 - latitude
-        phi1 = (90.0 - float(self.latitude)) * DEGREES_TO_RADIANS
-        phi2 = (90.0 - float(la2)) * DEGREES_TO_RADIANS
-
-        # theta = longitude
-        theta1 = float(self.longitude) * DEGREES_TO_RADIANS
-        theta2 = float(lo2) * DEGREES_TO_RADIANS
-
-        # Compute spherical distance from spherical coordinates.
-        # For two localities in spherical coordinates
-        # (1, theta, phi) and (1, theta, phi)
-        # cosine( arc length ) =
-        #    sin phi sin phi' cos(theta-theta') + cos phi cos phi'
-        # distance = rho * arc length
-        cosinus = sin(phi1) * sin(phi2) * cos(theta1 - theta2) + cos(phi1) * cos(phi2)
-        cosinus = round(cosinus, 14)  # to avoid math domain error in acos
-        arc = acos(cosinus)
-
-        # Multiply arc by the radius of the earth
-        return arc * EARTH_RADIUS_MI
+        return calc_dist_nogis(self.latitude, self.longitude, la2, lo2)
 
     def near_localities(self, miles):
+        if not GIS_LIBRARIES:
+            raise NotImplementedError
         localities = self.near_localities_rough(miles)
         localities = localities.filter(point__distance_lte=(self.point, D(mi=miles)))
         return localities.values_list("geonameid", flat=True)
@@ -370,8 +403,10 @@ class Locality(models.Model):
     population = models.PositiveIntegerField()
     latitude = models.DecimalField(max_digits=7, decimal_places=2)
     longitude = models.DecimalField(max_digits=7, decimal_places=2)
-    point = models.PointField(geography=False, srid=4326)
+    if GIS_LIBRARIES:
+        point = models.PointField(geography=False, srid=4326)
     modification_date = models.DateField()
+    slug = models.CharField(max_length=35, db_index=True, blank=True, null=True)
 
 
 class AlternateName(models.Model):
@@ -408,13 +443,27 @@ class Postcode(models.Model):
     admin_code3 = models.CharField(blank=True, null=True, max_length=20,  verbose_name='community')
     latitude = models.DecimalField(max_digits=7, decimal_places=2)
     longitude = models.DecimalField(max_digits=7, decimal_places=2)
-    point = models.PointField(geography=False, srid=4326)
+    if GIS_LIBRARIES:
+        point = models.PointField(geography=False, srid=4326)
     # accuracy of lat/lng from 1=estimated, 4=geonameid, 6=centroid of addresses or shape
     accuracy = models.IntegerField(blank=True, null=True)
 
     def near_localities_rough(self, miles):
         return near_places_rough(Locality, self.latitude, self.longitude, miles)
 
+    def title(self):
+        return f'{self.postal_code}, {self.place_name}'
+
     @property
     def name(self):
+        return self.title()
+
+    @property
+    def slug(self):
+        return slugify(self.postal_code)
+
+    def __str__(self):
         return self.postal_code
+
+    def get_absolute_url(self):
+        return f'/search?q_key={slugify(self.postal_code).upper()}&q_typ=p'

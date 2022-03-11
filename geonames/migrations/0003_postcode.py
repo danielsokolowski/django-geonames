@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('admin_code3', models.CharField(blank=True, max_length=20, null=True, verbose_name='community')),
                 ('latitude', models.DecimalField(decimal_places=2, max_digits=7)),
                 ('longitude', models.DecimalField(decimal_places=2, max_digits=7)),
-                ('point', django.contrib.gis.db.models.fields.PointField(srid=4326)),
+                # ('point', django.contrib.gis.db.models.fields.PointField(srid=4326)),
                 ('accuracy', models.IntegerField(blank=True, null=True)),
                 ('country', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='postcode_set', to='geonames.Country')),
             ],

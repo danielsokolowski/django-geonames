@@ -1,4 +1,3 @@
-from django.contrib.gis.geos import Point
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Count
@@ -6,6 +5,7 @@ from django.conf import settings
 import traceback
 from geonames.models import Timezone, Language, Country, Currency, Locality, \
     Admin1Code, Admin2Code, AlternateName, GeonamesUpdate, Postcode
+from geonames.models import GIS_LIBRARIES
 import datetime
 import os
 import sys
@@ -13,6 +13,8 @@ import tempfile
 import shutil
 import glob
 
+if GIS_LIBRARIES:
+    from django.contrib.gis.geos import Point
 
 FILES = [
     'http://download.geonames.org/export/dump/timeZones.txt',
@@ -70,7 +72,7 @@ class Command(BaseCommand):
                 member.objects.all().delete()
 
         for member in geo_models:
-            if member.objects.all().count() is not 0:
+            if member.objects.all().count() != 0:
                 print(f'ERROR: there are {member._meta.verbose_name_plural} in the database')
                 sys.exit(1)
 
@@ -80,19 +82,19 @@ class Command(BaseCommand):
         self.load_languagecodes()
         self.load_countries()
         self.load_postcodes()
+        self.load_postcodes('GB_full.txt')
         self.load_admin1()
         self.load_admin2()
         self.load_localities()
         self.cleanup()
         self.load_altnames()
-        self.load_postcodes('GB_full.txt')
         self.check_errors()
 
         # Save the time when the load happened
         GeonamesUpdate.objects.create()
 
     def download_files(self):
-        # make the temp folder if it dosen't exist
+        # make the temp folder if it doesn't exist
         try:
             os.mkdir(self.download_dir)
         except OSError:
@@ -333,11 +335,12 @@ class Command(BaseCommand):
                         admin2_id=admin2_id,
                         latitude=latitude,
                         longitude=longitude,
-                        point=Point(latitude, longitude),
                         timezone_id=timezone_name,
                         population=population,
                         modification_date=modification_date
                     )
+                    if GIS_LIBRARIES:
+                        locality.point = Point(latitude, longitude)
                     locality.long_name = locality.generate_long_name()
                     objects.append(locality)
                     processed += 1
@@ -481,9 +484,10 @@ class Command(BaseCommand):
                     admin_code3=admin_code3,
                     latitude=latitude,
                     longitude=longitude,
-                    point=Point(latitude, longitude),
                     accuracy=accuracy or None
                 )
+                if GIS_LIBRARIES:
+                    postcode.point = Point(latitude, longitude)
                 objects.append(postcode)
                 processed += 1
 

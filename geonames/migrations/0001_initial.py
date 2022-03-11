@@ -102,7 +102,7 @@ class Migration(migrations.Migration):
                 ('population', models.PositiveIntegerField()),
                 ('latitude', models.DecimalField(decimal_places=2, max_digits=7)),
                 ('longitude', models.DecimalField(decimal_places=2, max_digits=7)),
-                ('point', django.contrib.gis.db.models.fields.PointField(srid=4326)),
+                # ('point', django.contrib.gis.db.models.fields.PointField(srid=4326)),
                 ('modification_date', models.DateField()),
                 ('admin1', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='locality_set', to='geonames.Admin1Code')),
                 ('admin2', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='locality_set', to='geonames.Admin2Code')),
