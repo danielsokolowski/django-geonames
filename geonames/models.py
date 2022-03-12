@@ -1,5 +1,4 @@
-from django.template.defaultfilters import slugify
-
+from decimal import Decimal
 from math import acos, cos, degrees, fabs, pi, radians, sin
 
 from django.conf import settings
@@ -236,7 +235,7 @@ class Admin2Code(models.Model):
     slug = models.CharField(max_length=35, db_index=True, blank=True, null=True)
 
 
-def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
+def near_places_rough(place_type_model, lat, lon, miles, sql=None):
     """
     Rough calculation of the places at 'miles' miles of this place.
     Is rough because calculates a square instead of a circle and the earth
@@ -244,13 +243,13 @@ def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
     need precision.
     """
     diff_lat = Decimal(degrees(miles / EARTH_RADIUS_MI))
-    latitude = Decimal(latitude)
-    longitude = Decimal(longitude)
-    max_lat = latitude + diff_lat
-    min_lat = latitude - diff_lat
-    diff_long = Decimal(degrees(miles / EARTH_RADIUS_MI / cos(radians(latitude))))
-    max_long = longitude + diff_long
-    min_long = longitude - diff_long
+    lat = Decimal(lat)
+    lon = Decimal(lon)
+    max_lat = lat + diff_lat
+    min_lat = lat - diff_lat
+    diff_long = Decimal(degrees(miles / EARTH_RADIUS_MI / cos(radians(lat))))
+    max_long = lon + diff_long
+    min_long = lon - diff_long
     if sql:
         return f"""
             lat >= {min_lat:.6f} AND lon >= {min_long:.6f} AND
@@ -260,13 +259,13 @@ def near_places_rough(place_type_model, latitude, longitude, miles, sql=None):
 
 
 def calc_dist_nogis(la1, lo1, la2, lo2):
-    # Convert latitude and longitude to
+    # Convert lat/lon to
     # spherical coordinates in radians.
-    # phi = 90 - latitude
+    # phi = 90 - lat
     phi1 = (90.0 - float(la1)) * DEGREES_TO_RADIANS
     phi2 = (90.0 - float(la2)) * DEGREES_TO_RADIANS
 
-    # theta = longitude
+    # theta = lon
     theta1 = float(lo1) * DEGREES_TO_RADIANS
     theta2 = float(lo2) * DEGREES_TO_RADIANS
 
@@ -369,7 +368,7 @@ class Locality(models.Model):
     def near_locals_nogis(self, miles):
         ids = []
         for loc in self.near_localities_rough(miles).values_list(
-                "geonameid", "latitude", "longitude"):
+                "geonameid", "lat", "lon"):
             other_geonameid = loc[0]
             if self.geonameid == other_geonameid:
                 distance = 0
@@ -378,7 +377,6 @@ class Locality(models.Model):
                 distance = self.calc_distance_nogis(loc[1], loc[2])
                 if distance <= miles:
                     ids.append(other_geonameid)
-
         return ids
 
     def calc_distance_nogis(self, la2, lo2):

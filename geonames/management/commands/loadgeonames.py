@@ -327,8 +327,8 @@ class Command(BaseCommand):
                         admin1_id = None
                         admin2_id = None
                     timezone_name = fields[17]
-                    latitude = float(fields[4])
-                    longitude = float(fields[5])
+                    lat = float(fields[4])
+                    lon = float(fields[5])
                     modification_date = fields[18]
                     locality = Locality(
                         geonameid=geonameid,
@@ -336,14 +336,14 @@ class Command(BaseCommand):
                         country_id=country_code,
                         admin1_id=admin1_id,
                         admin2_id=admin2_id,
-                        latitude=latitude,
-                        longitude=longitude,
+                        lat=lat,
+                        lon=lon,
                         timezone_id=timezone_name,
                         population=population,
                         modification_date=modification_date
                     )
                     if GIS_LIBRARIES:
-                        locality.point = Point(latitude, longitude)
+                        locality.point = Point(lat, lon)
                     locality.long_name = locality.generate_long_name()
                     objects.append(locality)
                     processed += 1
@@ -469,11 +469,11 @@ class Command(BaseCommand):
                     admin_name1, admin_code1,
                     admin_name2, admin_code2,
                     admin_name3, admin_code3,
-                    latitude, longitude, accuracy
+                    lat, lon, accuracy
                 ) = fields
 
-                latitude = float(latitude)
-                longitude = float(longitude)
+                lat = float(lat)
+                lon = float(lon)
 
                 postcode = Postcode(
                     country_id=country_code,
@@ -485,12 +485,12 @@ class Command(BaseCommand):
                     admin_code2=admin_code2,
                     admin_name3=admin_name3,
                     admin_code3=admin_code3,
-                    latitude=latitude,
-                    longitude=longitude,
+                    lat=lat,
+                    lon=lon,
                     accuracy=accuracy or None
                 )
                 if GIS_LIBRARIES:
-                    postcode.point = Point(latitude, longitude)
+                    postcode.point = Point(lat, lon)
                 objects.append(postcode)
                 processed += 1
 

@@ -100,8 +100,8 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(db_index=True, max_length=200)),
                 ('long_name', models.CharField(max_length=200)),
                 ('population', models.PositiveIntegerField()),
-                ('latitude', models.DecimalField(decimal_places=2, max_digits=7)),
-                ('longitude', models.DecimalField(decimal_places=2, max_digits=7)),
+                ('lat', models.DecimalField(max_digits=9, decimal_places=6, null=True)),
+                ('lon', models.DecimalField(max_digits=9, decimal_places=6, null=True)),
                 # ('point', django.contrib.gis.db.models.fields.PointField(srid=4326)),
                 ('modification_date', models.DateField()),
                 ('admin1', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='locality_set', to='geonames.Admin1Code')),
@@ -144,7 +144,6 @@ class Migration(migrations.Migration):
             ],
             options={
                 'ordering': ['locality__pk', 'name'],
-                'unique_together': {('locality', 'name')},
             },
         ),
         migrations.AlterUniqueTogether(
