@@ -1,5 +1,6 @@
 import re
 
+
 def trim_stopwords(s, stop_words):
     """Case-insensitive removal of stop phrases/words from a string
     >>> trim_stopwords('Depártment de Testing Test royale', ['depártment de', 'royale'])
