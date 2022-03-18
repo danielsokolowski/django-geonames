@@ -3,7 +3,6 @@ from math import acos, cos, degrees, fabs, pi, radians, sin
 
 from django.conf import settings
 from django.db import models
-from django.db.models import Manager as GeoManager
 from django.db.models import Q
 from django.template.defaultfilters import slugify
 
@@ -14,6 +13,53 @@ if GIS_LIBRARIES:
     from django.contrib.gis.geos import Point
     from django.contrib.gis.db import models
     from django.contrib.gis.measure import D
+
+EARTH_R = 3959
+
+
+class GeoManager(models.Manager):
+    def area(self, min_latlon, max_latlon):
+        min_lat, min_lon = min_latlon  # south-west corner (lower left)
+        max_lat, max_lon = max_latlon  # north-east corner
+        return self.filter(lat__gte=min_lat, lon__gte=min_lon)\
+                   .filter(lat__lte=max_lat, lon__lte=max_lon)
+
+    def near(self, lat, lon, radius=20, sector='', limit=100, sort=True):
+        """With SQL version of the Haversine formula"""
+        if not lat:
+            return []
+
+        table = self.model._meta.db_table
+        pk = self.model._meta.pk.name
+        if sector:
+            sector = f'AND sector_id = "{sector}"'
+
+        bbox = near_places_rough(self.model, lat, lon, miles=radius, sql=True)
+        # coords = ST_GeomFromText(CONCAT('POINT(',lat ,' ', lon, ')'), 4326)
+        # ST_Distance_Sphere(coords, ST_GeomFromText('POINT({lat} {lon})', 4326), {EARTH_R} ) AS distance
+
+        qs = self.raw(f"""
+            SELECT {pk},
+              ({EARTH_R} * acos(cos(radians({lat})) * cos(radians(lat)) * cos(radians(lon) - radians({lon}))
+                                + sin(radians({lat})) * sin(radians(lat)))) AS distance
+            FROM {table} WHERE {bbox} lat IS NOT NULL {sector}
+            GROUP BY {pk}
+            HAVING distance < {radius} ORDER BY distance
+            LIMIT {limit}
+        """)
+        pks = [o.pk for o in qs]
+        distances = {o.pk: round(o.distance, 1) for o in qs}
+
+        qs = self.filter(pk__in=pks)
+        only = getattr(self.model, 'only', [])
+        if only:
+            only = self.model.only + ['urn', 'name', 'postcode']
+            qs = qs.only(*only)
+        for o in qs:
+            setattr(o, 'distance', distances[o.pk])
+        if sort:
+            qs = sorted(list(qs), key=lambda x: x.distance)
+        return qs
 
 
 class BaseManager(GeoManager):
@@ -448,6 +494,7 @@ class Postcode(models.Model):
 
     # accuracy of lat/lng from 1=estimated, 4=geonameid, 6=centroid of addresses or shape
     accuracy = models.IntegerField(blank=True, null=True)
+    objects = GeoManager()
 
     def near_localities_rough(self, miles):
         return near_places_rough(Locality, self.lat, self.lon, miles)
