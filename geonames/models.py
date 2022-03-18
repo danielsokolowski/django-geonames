@@ -118,8 +118,6 @@ class Timezone(models.Model):
         gmt = fabs(self.gmt_offset)
         hours = int(gmt)
         minutes = int((gmt - hours) * 60)
-        if settings.DEBUG:
-            return f"PK{'PK' + self.pk} UTC{sign}{hours:02d}:{minutes:02d}"
         return f"{self.name} UTC{sign}{hours:02d}:{minutes:02d}"
 
     objects = BaseManager()
@@ -137,8 +135,6 @@ class Language(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        if settings.DEBUG:
-            return f"PK{self.name}"
         return self.name
 
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
@@ -156,8 +152,6 @@ class Currency(models.Model):
         verbose_name_plural = 'Currencies'
 
     def __str__(self):
-        if settings.DEBUG:
-            return f"PK{self.code}: {self.name}"
         return f"{self.code} - {self.name}"
 
     objects = BaseManager()
@@ -176,8 +170,6 @@ class Country(models.Model):
         verbose_name_plural = 'Countries'
 
     def __str__(self):
-        if settings.DEBUG:
-            return f'PK{self.code}: {self.name}'
         return self.name
 
     def search_locality(self, locality_name):
@@ -204,9 +196,7 @@ class Admin1Code(models.Model):
         ordering = ['country', 'name']
 
     def __str__(self):
-        if settings.DEBUG:
-            return f'PK{self.geonameid}: {self.country.name} > {self.name}'
-        return f'{self.name}, {self.country.name}'
+        return f'{self.country.name} > {self.name}'
 
     def save(self, *args, **kwargs):
         # Call the "real" save() method.
@@ -233,14 +223,10 @@ class Admin2Code(models.Model):
         ordering = ['country', 'admin1', 'name']
 
     def __str__(self):
-        admin1_name = None
-        if self.admin1: admin1_name = self.admin1.name
-        if settings.DEBUG:
-            return 'PK{0}: {1}{2} > {3}'.format(
-                self.geonameid, self.country.name,
-                ' > ' + admin1_name if admin1_name else '', self.name)
-        return '{0}, {1}{2}'.format(
-            self.name, admin1_name + ', ' if admin1_name else '', self.country.name)
+        admin1_name = ''
+        if self.admin1:
+            admin1_name = f'{self.admin1.name} > '
+        return f'{self.country.name} > {admin1_name}{self.name}'
 
     def get_absolute_url(self, segment=''):
         url = f'/{self.slug}/'
@@ -337,19 +323,12 @@ class Locality(models.Model):
         verbose_name_plural = 'Localities'
 
     def __str__(self):
-        admin1_name = None
-        if self.admin1: admin1_name = self.admin1.name
-        admin2_name = None
-        if self.admin2: admin2_name = self.admin2.name
-        if settings.DEBUG:
-            return 'PK{0}: {1}{2}{3} > {4}'.format(
-                self.geonameid, self.country.name,
-                ' > ' + admin1_name if admin1_name else '',
-                ' > ' + admin2_name + ' > ' if admin2_name else '', self.name)
-        return '{0}{1}{2}, {3}'.format(
-            self.name,
-            ', ' + admin2_name if admin2_name else '',
-            ', ' + admin1_name if admin1_name else '', self.country.name)
+        admin1_name, admin2_name = '', ''
+        if self.admin1:
+            admin1_name = f'{self.admin1.name} > '
+        if self.admin2:
+            admin2_name = f'{self.admin2.name} > '
+        return f'{self.country.name} > {admin1_name}{admin2_name}{self.name}'
 
     def get_absolute_url(self, segment='', admin2_slug=None):
         url = f'/{admin2_slug or self.admin2.slug}/{self.slug}'
@@ -462,9 +441,7 @@ class AlternateName(models.Model):
         ordering = ['locality__pk', 'name']
 
     def __str__(self):
-        if settings.DEBUG:
-            return f'PK{self.alternatenameid}: {self.name} ({self.locality.name})'
-        return f'{self.name} ({self.locality.name})'
+        return f'{self.locality.name} > {self.name}'
 
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
                                  choices=BaseManager.STATUS_CHOICES)
@@ -511,7 +488,7 @@ class Postcode(models.Model):
         return slugify(self.postal_code)
 
     def __str__(self):
-        return self.postal_code
+        return f'{self.country.name} > {self.postal_code}'
 
     def get_absolute_url(self):
         return f'/search?q_key={slugify(self.postal_code).upper()}&q_typ=p'
