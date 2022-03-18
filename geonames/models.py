@@ -103,6 +103,9 @@ class GeonamesUpdate(models.Model):
     """Log the geonames updates"""
     update_date = models.DateField(auto_now_add=True)
 
+    def __str__(self):
+        return str(self.update_date)
+
 
 class Timezone(models.Model):
     """Timezone information"""
@@ -118,7 +121,7 @@ class Timezone(models.Model):
         gmt = fabs(self.gmt_offset)
         hours = int(gmt)
         minutes = int((gmt - hours) * 60)
-        return f"{self.name} UTC{sign}{hours:02d}:{minutes:02d}"
+        return f"UTC{sign}{hours:02d}:{minutes:02d} {self.name}"
 
     objects = BaseManager()
 
@@ -135,7 +138,7 @@ class Language(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return self.name
+        return f"({self.code}) {self.name}"
 
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
                                  choices=BaseManager.STATUS_CHOICES)
@@ -143,6 +146,10 @@ class Language(models.Model):
     iso_639_1 = models.CharField(max_length=50, blank=True)
 
     objects = BaseManager()
+
+    @property
+    def code(self):
+        return self.iso_639_1
 
 
 class Currency(models.Model):
@@ -152,7 +159,7 @@ class Currency(models.Model):
         verbose_name_plural = 'Currencies'
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"({self.code}) {self.name}"
 
     objects = BaseManager()
 
@@ -170,7 +177,7 @@ class Country(models.Model):
         verbose_name_plural = 'Countries'
 
     def __str__(self):
-        return self.name
+        return f'({self.code}) {self.name}'
 
     def search_locality(self, locality_name):
         if len(locality_name) == 0:
@@ -441,7 +448,7 @@ class AlternateName(models.Model):
         ordering = ['locality__pk', 'name']
 
     def __str__(self):
-        return f'{self.locality.name} > {self.name}'
+        return f'{self.locality.name} ({self.locality.country.code}) = {self.name}'
 
     status = models.IntegerField(blank=False, default=BaseManager.STATUS_ENABLED,
                                  choices=BaseManager.STATUS_CHOICES)
