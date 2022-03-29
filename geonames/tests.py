@@ -42,9 +42,9 @@
 #         self.admin2code8 = Admin2Code.objects.create(geonameid=12, code="a2c8", name="a2c8 name", country=self.country2, admin1=self.admin1code4)
 # 
 #         # Localities
-#         self.locality1 = Locality.objects.create(geonameid=13, name="Loc1", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, latitude=1, longitude=1, modification_date="2012-1-1")
-#         self.locality2 = Locality.objects.create(geonameid=14, name="Loc2", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, latitude=1, longitude=2, modification_date="2012-1-1")
-#         self.locality3 = Locality.objects.create(geonameid=15, name="Loc3", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, latitude=1, longitude=3, modification_date="2012-1-1")
+#         self.locality1 = Locality.objects.create(geonameid=13, name="Loc1", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, lat=1, lon=1, modification_date="2012-1-1")
+#         self.locality2 = Locality.objects.create(geonameid=14, name="Loc2", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, lat=1, lon=2, modification_date="2012-1-1")
+#         self.locality3 = Locality.objects.create(geonameid=15, name="Loc3", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, lat=1, lon=3, modification_date="2012-1-1")
 # 
 #         # Alternate names
 #         self.altName1 = AlternateName.objects.create(locality=self.locality1, name="Loc1 alt")
@@ -83,13 +83,13 @@
 # 
 #     def test_save_locations(self):
 #         # Cannot be duplicated long names
-#         self.assertRaisesMessage(StandardError, "Duplicated locality long name 'Loc1, a2c1 name, a1c1 name'", Locality.objects.create, geonameid=1300, name="Loc1", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, latitude=1, longitude=1, modification_date="2012-1-1")
+#         self.assertRaisesMessage(StandardError, "Duplicated locality long name 'Loc1, a2c1 name, a1c1 name'", Locality.objects.create, geonameid=1300, name="Loc1", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, lat=1, lon=1, modification_date="2012-1-1")
 #         # Check country and adm zones consistency
-#         self.assertRaisesMessage(StandardError, "The country 'Country2' from the Admin1 'a1c3 name, Country2' is different than the country 'Country1' from the locality 'Loc1, a2c1 name, a1c3 name'", Locality.objects.create, geonameid=1300, name="Loc1", country=self.country1, admin1=self.admin1code3, admin2=self.admin2code1, timezone=self.tz1, population=1, latitude=1, longitude=1, modification_date="2012-1-1")
-#         self.assertRaisesMessage(StandardError, "The country 'Country2' from the Admin2 'a2c5 name, a1c3 name, Country2' is different than the country 'Country1' from the locality 'Loc1, a2c5 name, a1c1 name'", Locality.objects.create, geonameid=1300, name="Loc1", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code5, timezone=self.tz1, population=1, latitude=1, longitude=1, modification_date="2012-1-1")
+#         self.assertRaisesMessage(StandardError, "The country 'Country2' from the Admin1 'a1c3 name, Country2' is different than the country 'Country1' from the locality 'Loc1, a2c1 name, a1c3 name'", Locality.objects.create, geonameid=1300, name="Loc1", country=self.country1, admin1=self.admin1code3, admin2=self.admin2code1, timezone=self.tz1, population=1, lat=1, lon=1, modification_date="2012-1-1")
+#         self.assertRaisesMessage(StandardError, "The country 'Country2' from the Admin2 'a2c5 name, a1c3 name, Country2' is different than the country 'Country1' from the locality 'Loc1, a2c5 name, a1c1 name'", Locality.objects.create, geonameid=1300, name="Loc1", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code5, timezone=self.tz1, population=1, lat=1, lon=1, modification_date="2012-1-1")
 # 
 #     def test_localities_deleted(self):
-#         locality = Locality.objects.create(geonameid=1300, name="Loc1_deleted", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, latitude=1, longitude=1, modification_date="2012-1-1", deleted=True)
+#         locality = Locality.objects.create(geonameid=1300, name="Loc1_deleted", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, lat=1, lon=1, modification_date="2012-1-1", deleted=True)
 #         all_localitites = Locality.objects.all()
 #         self.assertEqual(all_localitites.count(), 3)
 #         self.assertNotIn(locality, all_localitites)
@@ -108,7 +108,7 @@
 #         self.assertEquals(1, result.count())
 # 
 #         # The search is only in the cities of the country
-#         locality = Locality.objects.create(geonameid=1300, name="Loc1", country=self.country2, admin1=self.admin1code3, admin2=self.admin2code5, timezone=self.tz1, population=1, latitude=1, longitude=1, modification_date="2012-1-1")
+#         locality = Locality.objects.create(geonameid=1300, name="Loc1", country=self.country2, admin1=self.admin1code3, admin2=self.admin2code5, timezone=self.tz1, population=1, lat=1, lon=1, modification_date="2012-1-1")
 #         result = self.country1.search_locality("Loc1")
 #         self.assertIn(self.locality1, result)
 #         self.assertNotIn(locality, result)
@@ -116,9 +116,9 @@
 #     def test_gis(self):
 #         # Three localities set in a diagonal, dist(l1, l2)=20 and dist(l1,l3)=21
 #         # So if we filter locations at 20 mi from l1, only l1 and l2 will be fetched
-#         l1 = Locality.objects.create(geonameid=13001, name="Loc1_gis", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, latitude=57.15, longitude=-2.10, modification_date="2012-1-1")
-#         l2 = Locality.objects.create(geonameid=13002, name="Loc2_gis", country=self.country2, admin1=self.admin1code3, admin2=self.admin2code5, timezone=self.tz1, population=1, latitude=57.32, longitude=-2.53, modification_date="2012-1-1")
-#         l3 = Locality.objects.create(geonameid=13003, name="Loc3_gis", country=self.country2, admin1=self.admin1code3, admin2=self.admin2code5, timezone=self.tz1, population=1, latitude=57.33, longitude=-2.54, modification_date="2012-1-1")
+#         l1 = Locality.objects.create(geonameid=13001, name="Loc1_gis", country=self.country1, admin1=self.admin1code1, admin2=self.admin2code1, timezone=self.tz1, population=1, lat=57.15, lon=-2.10, modification_date="2012-1-1")
+#         l2 = Locality.objects.create(geonameid=13002, name="Loc2_gis", country=self.country2, admin1=self.admin1code3, admin2=self.admin2code5, timezone=self.tz1, population=1, lat=57.32, lon=-2.53, modification_date="2012-1-1")
+#         l3 = Locality.objects.create(geonameid=13003, name="Loc3_gis", country=self.country2, admin1=self.admin1code3, admin2=self.admin2code5, timezone=self.tz1, population=1, lat=57.33, lon=-2.54, modification_date="2012-1-1")
 #         near_localities = l1.near_localities(20)
 #         self.assertIn(l1.geonameid, near_localities)
 #         self.assertIn(l2.geonameid, near_localities)
