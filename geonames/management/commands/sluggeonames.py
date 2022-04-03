@@ -7,12 +7,12 @@ from geonames.models import Locality, Admin2Code
 
 def admin2_save(o):
     o.save(update_localities_longname=False, update_handle=True)
-    print(o.name.ljust(50), o.slug)
+    # print(o.name.ljust(50), o.slug)
 
 
 def loc_save(o):
     o.save(check_duplicated_longname=False, update_handle=True)
-    print(o.name.ljust(40), o.slug)
+    # print(o.name.ljust(40), o.slug)
 
 
 def spaceless_gb_postcodes():
