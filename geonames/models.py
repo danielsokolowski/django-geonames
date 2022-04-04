@@ -495,7 +495,8 @@ class Postcode(models.Model):
         return slugify(self.postal_code)
 
     def __str__(self):
-        return f'{self.country.name} > {self.postal_code}'
+        return self.postal_code  # for compatibility with direct FKs here
+        # return f'{self.country.name} > {self.postal_code}'
 
     def get_absolute_url(self):
         return f'/search?q_key={slugify(self.postal_code).upper()}&q_typ=p'
