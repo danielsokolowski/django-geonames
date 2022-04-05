@@ -23,7 +23,7 @@ def spaceless_gb_postcodes():
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        # had not thought of a better place to put the spoonfeed utility yet
+        # had not thought of a better place to put spoon-feed utility yet
         # pip3 install tqdm git+git://github.com/fmalina/django-upload.git#egg=upload
         from upload.utils.spoonfeed import spoonfeed
 
