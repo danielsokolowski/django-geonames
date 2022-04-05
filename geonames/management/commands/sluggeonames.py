@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.db import connection
 
-from blocl.utils import spoonfeed
 from geonames.models import Locality, Admin2Code
 
 
@@ -24,6 +23,10 @@ def spaceless_gb_postcodes():
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
+        # had not thought of a better place to put the spoonfeed utility yet
+        # pip3 install tqdm git+git://github.com/fmalina/django-upload.git#egg=upload
+        from upload.utils.spoonfeed import spoonfeed
+
         print('GENERATING ADMIN2 HANDLES...')
         spoonfeed(Admin2Code.objects.all(), admin2_save)
         print('GENERATING LOCALITY HANDLES...')

@@ -40,6 +40,7 @@ def profile_near_locations_gis(country, distance):
 
     return datetime.datetime.now() - start_time
 
+
 if __name__ == "__main__":
     # Name search
     country = Country.objects.get(code="GB")

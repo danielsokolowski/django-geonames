@@ -183,7 +183,7 @@ class Country(models.Model):
         if len(locality_name) == 0:
             return []
         q = Q(country_id=self.code)
-        q &= (Q(name__iexact=locality_name) | Q(alternatenames__name__iexact=locality_name))
+        q &= (Q(name__iexact=locality_name) | Q(alternatename_set__name__iexact=locality_name))
         return Locality.objects.filter(q).distinct()
 
     objects = BaseManager()
@@ -210,7 +210,7 @@ class Admin1Code(models.Model):
         super(Admin1Code, self).save(*args, **kwargs)
 
         # Update child localities long name
-        for loc in self.localities.all():
+        for loc in self.locality_set.all():
             loc.save()
 
     objects = BaseManager()
@@ -357,16 +357,20 @@ class Locality(models.Model):
 
         # Check consistency
         if self.admin1 is not None and self.admin1.country != self.country:
-            raise ValueError(f"""The country '{self.admin1.country}'
+            raise ValueError(
+                f"""The country '{self.admin1.country}'
                 from the Admin1 '{self.admin1}' is different
                 than the country '{self.country}'
-                from the locality '{self.long_name}'""")
+                from the locality '{self.long_name}'"""
+            )
 
         if self.admin2 is not None and self.admin2.country != self.country:
-            raise ValueError(f"""The country '{self.admin2.country}'
+            raise ValueError(
+                f"""The country '{self.admin2.country}'
                 from the Admin2 '{self.admin2}'
                 is different than the country '{self.country}'
-                from the locality '{self.long_name}'""")
+                from the locality '{self.long_name}'"""
+            )
 
         if GIS_LIBRARIES:
             self.point = Point(float(self.lon), float(self.lat))
