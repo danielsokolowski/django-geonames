@@ -1,3 +1,3 @@
 include LICENSE
-include README.txt
+include README.md
 recursive-include geonames/scripts *
