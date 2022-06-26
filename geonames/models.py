@@ -51,10 +51,10 @@ class GeoManager(models.Manager):
         distances = {o.pk: round(o.distance, 1) for o in qs}
 
         qs = self.filter(pk__in=pks)
-        only = getattr(self.model, 'only', [])
-        if only:
-            only = self.model.only + ['urn', 'name', 'postcode']
-            qs = qs.only(*only)
+        # only = getattr(self.model, 'only', [])
+        # if only:
+        #     only = self.model.only + ['urn', 'name', 'postcode']
+        #     qs = qs.only(*only)
         for o in qs:
             setattr(o, 'distance', distances[o.pk])
         if sort:
