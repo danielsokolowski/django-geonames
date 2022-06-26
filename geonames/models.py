@@ -338,7 +338,11 @@ class Locality(models.Model):
         return f'{self.country.name} > {admin1_name}{admin2_name}{self.name}'
 
     def get_absolute_url(self, segment='', admin2_slug=None):
-        url = f'/{admin2_slug or self.admin2.slug}/{self.slug}'
+        url = f'/{self.slug}'
+        if self.admin2:
+            url = f'/{admin2_slug or self.admin2.slug}/{self.slug}'
+        if admin2_slug:
+            url = f'/{admin2_slug}/{self.slug}'
         if segment:
             return f'/{segment}{url}'
         return url
