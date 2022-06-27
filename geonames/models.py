@@ -24,8 +24,13 @@ class GeoManager(models.Manager):
         return self.filter(lat__gte=min_lat, lon__gte=min_lon)\
                    .filter(lat__lte=max_lat, lon__lte=max_lon)
 
-    def near(self, lat, lon, radius=20, sector='', limit=100, sort=True):
-        """With SQL version of the Haversine formula"""
+    def near(self, lat, lon, radius=20, sector='', limit=100, sort=True, prefetch=None):
+        """
+        Lookup using SQL version of the Haversine formula
+        Returns a list, not queryset, due to stitching in distances and sorting
+
+        prefetch - list of fields for prefetch related
+        """
         if not lat:
             return []
 
@@ -51,10 +56,8 @@ class GeoManager(models.Manager):
         distances = {o.pk: round(o.distance, 1) for o in qs}
 
         qs = self.filter(pk__in=pks)
-        # only = getattr(self.model, 'only', [])
-        # if only:
-        #     only = self.model.only + ['urn', 'name', 'postcode']
-        #     qs = qs.only(*only)
+        if prefetch:
+            qs = qs.prefetch_related(*prefetch)
         for o in qs:
             setattr(o, 'distance', distances[o.pk])
         if sort:
